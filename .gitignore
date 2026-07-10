@@ -1,0 +1,74 @@
+# === TradePulse .gitignore ===
+# Excludes development / product-build / testing artifacts and secrets.
+# Tracked: product source, the living docs (CLAUDE.md, docs/**), the plan.
+
+# --- Secrets & env (NEVER commit) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+config/*.secret.*
+
+# --- Node / Next.js (frontend) ---
+node_modules/
+.next/
+out/
+.vercel/
+.turbo/
+dist/
+build/
+*.tsbuildinfo
+.eslintcache
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Python / ETL pipeline ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# --- Test / coverage output ---
+coverage/
+.coverage
+htmlcov/
+.nyc_output/
+junit.xml
+test-results/
+playwright-report/
+
+# --- Data pulls & caches (raw trade data is re-pullable, not source) ---
+data/raw/
+data/cache/
+*.duckdb
+*.sqlite
+*.sqlite3
+# local Postgres dumps
+*.dump
+
+# --- Dev workflow kit (source templates — tooling, not the product) ---
+dev-workflow-kit/
+
+# --- Scratch / temp ---
+scratch/
+tmp/
+*.log
+*.tmp
+*.bak
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
