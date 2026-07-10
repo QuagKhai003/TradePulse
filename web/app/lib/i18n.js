@@ -31,6 +31,12 @@ const STRINGS = {
     value: "Giá trị",
     share: "Thị phần",
     noPartners: "Chưa có dữ liệu nguồn cung cho thị trường này.",
+    profilesLink: "Hồ sơ công ty →",
+    profilesTitle: "Hồ sơ người mua & bán",
+    profilesNote: "Tên công khai + nguồn dẫn chứng. Không có thông tin liên hệ — chỉ thông tin, không kết nối.",
+    sampleProfiles: "HỒ SƠ MẪU — minh hoạ; hồ sơ thật được tuyển chọn thủ công từ nguồn công khai.",
+    buyers: "Người mua", sellers: "Người bán", roleBuyer: "Người mua", roleSeller: "Người bán",
+    source: "Nguồn", verified: "Kiểm chứng", upgrade: "Nâng cấp để xem", noProfiles: "Chưa có hồ sơ.",
   },
   en: {
     tagline: "Export demand radar",
@@ -58,6 +64,12 @@ const STRINGS = {
     value: "Value",
     share: "Share",
     noPartners: "No sourcing data for this market yet.",
+    profilesLink: "Company profiles →",
+    profilesTitle: "Buyer & seller profiles",
+    profilesNote: "Public names + cited sources. No contact data — information, not matchmaking.",
+    sampleProfiles: "SAMPLE PROFILES — illustrative; real profiles are hand-curated from public sources.",
+    buyers: "Buyers", sellers: "Sellers", roleBuyer: "Buyer", roleSeller: "Seller",
+    source: "Source", verified: "Verified", upgrade: "Upgrade to view", noProfiles: "No profiles yet.",
   },
 };
 

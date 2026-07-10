@@ -56,6 +56,7 @@ export default async function Page({ searchParams }) {
           <span className="chip hs">HS {hs}</span>
           {covered && <span className="chip">{tr.flowImport}</span>}
           {covered && <span className="chip muted">{tr.period} {snap.latest_period}</span>}
+          {covered && <a className="chip link" href={`/profiles${lang === "en" ? "?lang=en" : ""}`}>{tr.profilesLink}</a>}
         </div>
       </section>
 

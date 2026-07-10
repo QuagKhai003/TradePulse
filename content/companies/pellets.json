@@ -1,0 +1,29 @@
+{
+  "hs6": "440131",
+  "vertical": "Wood pellets",
+  "is_sample": true,
+  "note": "SAMPLE profiles — illustrative placeholders. Real profiles are hand-curated from public sources (FSC/SBP/PEFC certificate databases, tender award records, VIFOREST member lists). Names + public source links only — never private contacts (Golden Rule: inform, never match).",
+  "last_full_review": "2026-06-30",
+  "companies": [
+    { "id": "s1", "name": "Green Biomass Co. (sample)", "role": "seller", "country_code": 704, "country": "Vietnam",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "FSC Chain-of-Custody certificate", "evidence_url": "https://info.fsc.org/certificate", "verified_date": "2026-06-15" },
+    { "id": "s2", "name": "Delta Pellet Mill (sample)", "role": "seller", "country_code": 704, "country": "Vietnam",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "SBP certificate holder", "evidence_url": "https://sbp-cert.org/certificate-holders", "verified_date": "2026-06-15" },
+    { "id": "s3", "name": "Highland Wood Energy (sample)", "role": "seller", "country_code": 704, "country": "Vietnam",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "VIFOREST member directory", "evidence_url": "https://vietfores.org", "verified_date": "2026-06-02" },
+    { "id": "s4", "name": "Mekong Biofuel (sample)", "role": "seller", "country_code": 704, "country": "Vietnam",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "PEFC Chain-of-Custody certificate", "evidence_url": "https://www.pefc.org/find-certified", "verified_date": "2026-06-15" },
+    { "id": "s5", "name": "Borneo Pellet Works (sample)", "role": "seller", "country_code": 360, "country": "Indonesia",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "FSC Chain-of-Custody certificate", "evidence_url": "https://info.fsc.org/certificate", "verified_date": "2026-05-20" },
+    { "id": "s6", "name": "Cascade Fibre (sample)", "role": "seller", "country_code": 124, "country": "Canada",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "SBP certificate holder", "evidence_url": "https://sbp-cert.org/certificate-holders", "verified_date": "2026-05-20" },
+    { "id": "b1", "name": "Kyushu Power Utility (sample)", "role": "buyer", "country_code": 392, "country": "Japan",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "Biomass tender award record", "evidence_url": "https://www.meti.go.jp", "verified_date": "2026-06-10" },
+    { "id": "b2", "name": "Nihon Trading House (sample)", "role": "buyer", "country_code": 392, "country": "Japan",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "FIT program participant list", "evidence_url": "https://www.meti.go.jp", "verified_date": "2026-06-10" },
+    { "id": "b3", "name": "Korea South Power (sample)", "role": "buyer", "country_code": 410, "country": "South Korea",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "KOSPO tender award record", "evidence_url": "https://www.kospo.co.kr", "verified_date": "2026-06-08" },
+    { "id": "b4", "name": "Drax-style Generator (sample)", "role": "buyer", "country_code": 826, "country": "United Kingdom",
+      "hs6": ["440131"], "profile_url": "#", "evidence_source": "SBP certificate holder (end-user)", "evidence_url": "https://sbp-cert.org/certificate-holders", "verified_date": "2026-06-01" }
+  ]
+}

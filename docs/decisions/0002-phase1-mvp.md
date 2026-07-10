@@ -61,8 +61,12 @@ batches. Everything downstream of the skeleton is *widening*, not *de-risking*.
   → **DONE:** fixture extended with JP/KR partner breakdowns; `export.py` adds per-market partners
   (share+YoY) + sourcing series; `/market/[slug]` renders `PartnerTable` (VN highlighted) + SSR
   stacked-bar `SourcingChart`; tiles link in. Markets w/o partner data degrade gracefully. Build clean.
-- [ ] **1.6 — Layer 2: profiles.** Curated buyer/seller names + public profile/source links
+- [x] **1.6 — Layer 2: profiles.** Curated buyer/seller names + public profile/source links
   (FSC/SBP/PEFC, tender awards, VIFOREST). **No contact data.** **Acceptance:** ≥10 pellet profiles, each sourced.
+  → **DONE:** `content/companies/pellets.json` (10 curated profiles, SAMPLE-labelled, each with
+  evidence source + verified date, zero contacts); `/profiles` SSR list, free-tier blurs beyond 3
+  (plan §11). Verified no email/phone fields render. **Note:** entries are sample placeholders —
+  real curation is the documented manual task; the accuracy bar (S-001) applies before launch.
 - [ ] **1.7 — Layer 3: requirement pages.** pellets→JP, →KR, →EU markdown pages per plan §8
   template; every item sourced + dated; change log. **Acceptance:** 3 pages, zero unsourced items.
 - [ ] **1.8 — Watch/alerts (email) + locked-page telemetry.** Watch button; signal-band-crossing +

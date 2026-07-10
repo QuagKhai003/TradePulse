@@ -156,3 +156,29 @@ a.tile:hover { transform: translateY(-2px); border-color: var(--accent); box-sha
 .chart-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 10px 2px 0; margin: 0; font-size: 12px; color: var(--muted); }
 .chart-legend li { display: flex; align-items: center; gap: 6px; }
 .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+.chip.link { color: var(--accent); text-decoration: none; font-weight: 600; cursor: pointer; }
+.chip.link:hover { border-color: var(--accent); }
+
+/* Layer-2 profiles */
+.prof-section { margin-bottom: 22px; }
+.companies { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.company {
+  position: relative; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px; box-shadow: var(--shadow); overflow: hidden;
+}
+.company-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.role-tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+.role-tag.buyer { background: #eff6ff; color: #1d4ed8; }
+.role-tag.seller { background: #ecfdf5; color: #047857; }
+.company-country { font-size: 12px; }
+.company-name { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+.company-src { font-size: 13px; }
+.company-src a { color: var(--accent); text-decoration: none; }
+.company-src a:hover { text-decoration: underline; }
+.company-verified { font-size: 12px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.locked-card .company-name, .locked-card .company-src { filter: blur(5px); user-select: none; }
+.lockmask {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(247,249,252,.55); font-size: 13px; font-weight: 650; color: var(--muted);
+}
