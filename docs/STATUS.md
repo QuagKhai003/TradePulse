@@ -8,7 +8,8 @@
 ## Phase
 **Phase 1 MVP — COMPLETE, on real quarterly data, one-command run.** `npm run dev` auto-fetches.
 Layer-1 map/signals + drill-down sourcing use REAL UN Comtrade (authenticated, quarterly + partners,
-key in `etl/.env`). Profiles + Layer-3 requirements remain SAMPLE (curation pending). Stage 0 deferred.
+key in `etl/.env`). **Layer-2 profiles + Layer-3 requirement pages are now REAL curated** (official
+sources + verified dates, 2026-07-11). Stage 0 validation still deferred (ADR-0001).
 
 ## Active task
 **Phase 1 — ADR-0002 — DONE (1.1–1.9 merged to `main`).** Shipped: Layer-1 map + deterministic

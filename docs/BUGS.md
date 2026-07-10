@@ -38,7 +38,11 @@ Format: `L-NNN` (limitation) / `B-NNN` (bug) / `S-NNN` (security/launch risk).
 ## S-001 — Accuracy liability (outdated requirement → rejected container)
 - **Symptom:** a stale Layer-3 requirement could cause a user's shipment to be rejected at port.
 - **Cause:** Layer 3 is a curation business; sources change.
-- **Status:** open — mitigations mandated before any Layer-3 ships.
-- **Where:** plan §14, §8. Source link + verified date per item; "last full review" per page;
-  change log; "official sources govern" disclaimer.
-- **Notes:** hard cap ≤20 requirement pages until revenue (maintenance burden, plan §14).
+- **Status:** mitigated (live). Layer-2 profiles + Layer-3 requirement pages are now REAL curated
+  (2026-07-11) from official sources — EUDR (Reg 2023/1115, applies 30 Dec 2026), Japan FIT +
+  lifecycle-GHG reporting (from 1 Apr 2026), Korea legality + 2025 REC reform. Every item carries an
+  official source_url + verified_date; the loader drops any unsourced item; disclaimer says official
+  sources govern. **Residual risk:** rules change — needs a quarterly re-review (verified dates age).
+- **Where:** plan §14, §8; `content/requirements/*.json`, `content/companies/pellets.json`.
+- **Notes:** hard cap ≤20 requirement pages until revenue (maintenance burden, plan §14). Set a
+  quarterly review calendar; the "last review" date per page surfaces staleness.
