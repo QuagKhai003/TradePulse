@@ -1,0 +1,37 @@
+# DATA_MODEL
+
+> The classes/types/tables and their relationships. Update in the SAME change that adds or
+> alters one. Source: plan §10.2. **Status: PLANNED** — no code/schema exists yet (Stage 0).
+> This is the decided target schema, documented up front so Phase 1 builds against it.
+
+## Core types (current)
+None implemented yet. First types land in Phase 1 batch 1.1 (ETL) and 1.2 (signals).
+
+## Planned persistence (PostgreSQL — Phase 1)
+Documented before code so the schema is decided up front. Metric rule: store trade **value
+(USD)** + **volume (tons)** only — never fabricated order/shipment counts (plan §4.2).
+
+| Table | Key columns | Relationships / notes |
+|-------|-------------|-----------------------|
+| `hs_codes` | `hs6` PK | `description_en`, `description_vi`, `synonyms[]`, `category_slug`, `covered bool`. The everyday-word → HS map (§7.2). |
+| `trade_flows` | PK(`reporter`,`partner`,`hs6`,`period`,`flow`) | `flow` ENUM(export,import); `value_usd`, `quantity`, `qty_unit`, `source`, `published_date`. The Layer-1 fact table. |
+| `signals` | `id` | `country`, `hs6`, `flow`, `period`, `yoy_delta`, `band`, `computed_at`. Pure function of `trade_flows` (§6). |
+| `companies` | `id` | `name`, `country`, `role` ENUM(buyer,seller), `hs6[]`, `profile_url`, `evidence_source`, `evidence_url`, `verified_date`. Layer 2 — **public names + source only, never contacts**. |
+| `requirement_pages` | `id` | `hs6_group`, `market`, `body_md`, `last_full_review`. Layer 3; body is markdown (git = change log). |
+| `requirement_items` | (`page_id`,`seq`) | `text`, `type`, `mandatory`, `source_url`, `verified_date`. No row without `source_url` + `verified_date`. |
+| `tenders` | `id` | `market`, `hs6`, `title`, `buyer_entity`, `deadline`, `url`, `scraped_at`. Forward-demand alerts. |
+| `users` | `id` | `email`, `locale`, `tier`. Login required only to watch (§10.4). |
+| `watches` | (`user_id`,`hs6`,`market`,`flow`) | The recurring-revenue engine — north-star = watches/user. |
+| `alerts` | `id` | `user_id`, `type` ENUM(signal,tender,rule_change), `payload`, `sent_at`. |
+| `locked_page_clicks` | — | `user_id`, `hs6`, `market`, `clicked_at`. **The roadmap oracle** — demand telemetry (§7.6). |
+
+## Signal computation (deterministic — plan §6)
+- Granularity: reporter country × HS-6 × quarter, split by flow.
+- Comparison: **YoY only** (same quarter last year) — never QoQ (seasonal products).
+- `delta = (value_this − value_same_period_last_year) / value_same_period_last_year`.
+- Noise floors (all must pass): value ≥ $10M this qtr; base ≥ $2M; ≥ 4 quarters history.
+- Bands: ±15–30 moderate · ±30–60 significant · beyond ±60 surge/collapse · base≈0 & now ≥$5M = new lane.
+- Suppress −15…+15% ("minor" excluded by design). Declines are signals too.
+
+## API contracts
+- None yet. Add here (`<METHOD> /api/<path>` `<req>` → `<resp>`) when Phase 1 API lands.

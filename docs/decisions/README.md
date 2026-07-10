@@ -1,0 +1,12 @@
+# Decisions (ADRs)
+
+One file per non-obvious decision. Numbered, immutable once accepted (supersede with a new
+ADR rather than rewriting history). Each ADR carries a **Plan (batches)** checklist — the
+resumable work plan the build loop follows.
+
+Copy `0000-template.md` → `NNNN-<slug>.md` and link it below.
+
+| # | Title | Status |
+|---|-------|--------|
+| 0001 | [Stage 0 — manual report validation](0001-stage0-validation.md) | Accepted — IN PROGRESS |
+| 0002 | Phase 1 MVP build plan | Not written yet (write on Stage 0 = GO) |
