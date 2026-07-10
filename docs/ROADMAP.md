@@ -15,9 +15,10 @@
 **Sequence:** 0.1 → 0.2 → 0.3. **Gate:** GO = ≥5 substantive replies AND ≥3 say yes to paying.
 **Acceptance:** in ADR-0001.
 
-## Phase 1 — MVP — PLANNED (ADR-0002, write when Stage 0 = GO) — 6–8 weeks
+## Phase 1 — MVP — IN PROGRESS (ADR-0002) — 6–8 weeks
 **Goal:** global map + pilot vertical full depth + watch/alerts + payments (plan §13).
-Gated on Stage 0 GO. Anticipated batches (firmed up in ADR-0002):
+Skeleton (1.1–1.3) building in parallel with Stage 0; depth 1.6–1.9 waits for Stage 0 GO.
+Batches (locked in ADR-0002):
 
 | # | Task | Status |
 |---|------|--------|

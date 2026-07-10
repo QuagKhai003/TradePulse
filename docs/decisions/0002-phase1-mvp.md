@@ -1,0 +1,71 @@
+# ADR-0002 — Phase 1 MVP build plan
+
+**Status:** Accepted · 2026-07-10 · Builds on: ADR-0001 (Stage 0), product plan §5–11, §13.
+
+> **Gate note:** plan §12 recommends no code until Stage 0 = GO. Owner elected to build the
+> walking skeleton in parallel with Stage 0 validation (at owner's risk). If Stage 0 = KILL,
+> stop this ADR. Batches 1.1–1.3 are the low-regret skeleton; 1.6–1.9 (curation, payments)
+> should not start until Stage 0 = GO.
+
+## Context
+Phase 1 delivers the MVP: global map (Layer 1) + pilot-vertical full depth (signals, profiles,
+requirement pages) + watch/alerts + payments (plan §13). The bet is a thin vertical slice —
+real pellet data flowing to one map screen — proves the pipeline before we widen to nine
+batches. Everything downstream of the skeleton is *widening*, not *de-risking*.
+
+## Decision & key rules (apply to every batch)
+- **Golden Rule holds:** inform-never-match; deterministic signals (no LLM in the number path);
+  every Layer-3 item cites an official source + verified date.
+- **Walking skeleton first:** 1.1 → 1.2 → 1.3 (data → signals → map). Do not start depth
+  (1.4+) until the skeleton renders real pellet data.
+- **Tech decisions (settled here, revisit only via a new ADR):**
+  - **DB:** SQLite for the MVP (plan allows), **behind a repository seam** (`CONVENTIONS.md` §11)
+    so the Postgres swap is caller-invisible. Star schema per `DATA_MODEL.md`.
+  - **Web/API:** Next.js (SSR + API routes) — one web stack, small. Python only for the ETL batch.
+  - **Map:** D3 choropleth + free GeoJSON (no tile server, no billing). Choropleth is the whole need.
+  - **ETL:** Python (requests + pandas), cron/manual batch. Raw-before-transform: persist raw
+    pulls before deriving `trade_flows`. Cache aggressively (Comtrade rate limits).
+  - **i18n:** VN default, EN second, from day one.
+- **Scope lock:** pilot vertical = wood pellets (HS 4401.31 + neighbours in 4401). Depth markets
+  = JP, KR, EU, US, UK. Layer-1 map = all countries at aggregate level only.
+- **Metric rule:** value (USD) + volume (tons) only. Never fabricate order/shipment counts.
+- **Auth:** no login for free browsing; login required only to watch (plan §10.4).
+
+## Plan (batches — branch per batch, tested, docs each batch)
+> First unchecked box = "what's next." Tick `[ ]` → `[x]` with a one-line result on merge
+> (after owner approval). Batches 1.1–1.3 = the walking skeleton.
+
+- [ ] **1.1 — ETL: Comtrade → `trade_flows`.** Python job pulls pellet HS × {JP,KR,EU,US,UK}
+  importer-reported, quarterly; stores raw pull, upserts `trade_flows`. Behind a source seam +
+  local fixture. **Acceptance:** one command populates the DB from a cached/fixture pull; re-run is idempotent.
+- [ ] **1.2 — Signal compute (+ deterministic test).** Pure function over `trade_flows` → `signals`
+  (YoY delta, noise floors, bands per plan §6). **Acceptance:** offline test asserts every band
+  boundary + every noise-floor rejection; no network, no LLM.
+- [ ] **1.3 — Layer 1: choropleth map + signal feed.** Next.js SSR page: D3 choropleth (value +
+  YoY tile), side signal feed (moderate+), honest period labels. **Acceptance:** renders real
+  pellet data from `signals`; export/import toggle works; builds + lints clean.
+- [ ] **1.4 — Category search → HS chip.** Everyday-word box (VN/EN) → 30–50 hand-mapped HS
+  lookup → chip; map re-renders per product. **Acceptance:** "trà"/"pellet" resolves to the right HS.
+- [ ] **1.5 — Country drill-down + sourcing chart.** Within-country signals + top partners with
+  shares/YoY + historical sourcing chart. **Acceptance:** JP pellet page shows partner shares over time.
+- [ ] **1.6 — Layer 2: profiles.** Curated buyer/seller names + public profile/source links
+  (FSC/SBP/PEFC, tender awards, VIFOREST). **No contact data.** **Acceptance:** ≥10 pellet profiles, each sourced.
+- [ ] **1.7 — Layer 3: requirement pages.** pellets→JP, →KR, →EU markdown pages per plan §8
+  template; every item sourced + dated; change log. **Acceptance:** 3 pages, zero unsourced items.
+- [ ] **1.8 — Watch/alerts (email) + locked-page telemetry.** Watch button; signal-band-crossing +
+  rule-change email; `locked_page_clicks` logged. **Acceptance:** a band crossing emits one email to a watcher.
+- [ ] **1.9 — Payments (single tier).** Gate full profiles/requirements/alerts behind one paid tier.
+  **Acceptance:** free vs paid boundary matches plan §11; test-mode checkout completes.
+
+## Acceptance (phase done)
+- The skeleton (1.1–1.3) renders real pellet signals on the map.
+- Pilot depth live: category search, drill-down, ≥10 profiles, 3 requirement pages (all sourced).
+- Watch/alerts fire on a real band crossing; payments gate the paid boundary.
+- Signal math has a deterministic offline test; Golden Rule held throughout; VN+EN UI.
+
+## Notes for the executor
+- Sequence by dependency: 1.1 → 1.2 → 1.3 (skeleton), then 1.4 → 1.9.
+- Do NOT start 1.6–1.9 until Stage 0 = GO (ADR-0001). 1.1–1.3 are low-regret.
+- Each batch: branch from `main`, deterministic test for logic, update STATUS + progress
+  (+ DATA_MODEL when tables land), tick the box. **No merge without owner approval; no push
+  without approval; no AI attribution in commits.**

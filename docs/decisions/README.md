@@ -9,4 +9,4 @@ Copy `0000-template.md` → `NNNN-<slug>.md` and link it below.
 | # | Title | Status |
 |---|-------|--------|
 | 0001 | [Stage 0 — manual report validation](0001-stage0-validation.md) | Accepted — IN PROGRESS |
-| 0002 | Phase 1 MVP build plan | Not written yet (write on Stage 0 = GO) |
+| 0002 | [Phase 1 MVP build plan](0002-phase1-mvp.md) | Accepted — skeleton in parallel with Stage 0 |

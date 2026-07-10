@@ -3,22 +3,24 @@
 > Single source of truth for the CURRENT moment. Update at the start and end of every
 > session. History goes in `docs/progress/`, not here.
 
-**Last updated:** 2026-07-10 (workflow adopted + merged to main; kit folder removed)
+**Last updated:** 2026-07-10 (ADR-0002 Phase 1 plan written; two parallel branches open, unmerged)
 
 ## Phase
 **Stage 0 — validation (NO code per plan).** Plan §12–13: build nothing until the go/kill
 gate passes. `main` holds product plan + the file-driven workflow docs. No app code yet.
 
 ## Active task
-**Stage 0 — ADR-0001 — batch 0.1 NOT STARTED.** Workflow adopted + merged to `main`
-(owner-approved 2026-07-10); repo now runs the file-driven loop (`docs/CONVENTIONS.md` §10).
-**NEXT decision (owner):** run Stage 0 validation first (plan gate) OR start Phase 1 MVP
-scaffolding now at owner's risk (write ADR-0002 first). See "Path to MVP" below.
+**Parallel tracks decided (owner): validate + build skeleton at once.** Two branches open off
+`main`, both committed, **awaiting owner approval to merge:**
+- `docs/adr-0002-phase1-plan` — ADR-0002 (Phase 1 MVP batch plan 1.1–1.9) written + accepted.
+- `phase/0-manual-report` — Stage 0 batch 0.1: Vietnamese validation report scaffold.
+**NEXT after approvals:** batch 1.1 (branch `phase/1-etl-comtrade`) — Python ETL Comtrade →
+`trade_flows`; start filling the Stage 0 report with real sourced data.
 
 ## Next action (whoever picks this up)
-- **Owner decision:** Stage 0-first (recommended by plan §12) vs. build-now. Drives which ADR opens.
-- If Stage 0-first → ADR-0001 batch 0.1: hand-build the Vietnamese validation report (no code).
-- If build-now → write ADR-0002 (Phase 1 batch plan), then branch `phase/1-etl-comtrade`.
+- **Owner: review + approve the two open branches to merge** (see CLAUDE.md working agreement).
+- Then batch 1.1 ETL (walking-skeleton step 1 of 3). Then 1.2 signals, 1.3 map.
+- Fill the Stage 0 report (batch 0.1) with real sourced figures, then distribute (0.2).
 - Confirm Golden Rule wording ("Inform, never match" — CLAUDE.md).
 - Decide pilot-vertical fallback if pellet exporters go silent (tea/seafood/cashew — plan §15 Q1).
 
