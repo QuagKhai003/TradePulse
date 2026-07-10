@@ -5,7 +5,11 @@
 > This is the decided target schema, documented up front so Phase 1 builds against it.
 
 ## Core types (current)
-None implemented yet. First types land in Phase 1 batch 1.1 (ETL) and 1.2 (signals).
+- **`trade_flows`** (`etl/tradepulse_etl/db.py`) — IMPLEMENTED (SQLite). The Layer-1 fact table.
+  PK(reporter,partner,hs6,period,flow); value_usd + quantity + source + published_date.
+  Populated by `pipeline.run` from the source seam (fixture now, Comtrade later).
+- **`signals`** (`etl/tradepulse_etl/db.py`) — table created; filled in batch 1.2 (signal compute).
+- Remaining tables below are still PLANNED.
 
 ## Planned persistence (PostgreSQL — Phase 1)
 Documented before code so the schema is decided up front. Metric rule: store trade **value

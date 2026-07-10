@@ -35,9 +35,11 @@ batches. Everything downstream of the skeleton is *widening*, not *de-risking*.
 > First unchecked box = "what's next." Tick `[ ]` → `[x]` with a one-line result on merge
 > (after owner approval). Batches 1.1–1.3 = the walking skeleton.
 
-- [ ] **1.1 — ETL: Comtrade → `trade_flows`.** Python job pulls pellet HS × {JP,KR,EU,US,UK}
+- [x] **1.1 — ETL: Comtrade → `trade_flows`.** Python job pulls pellet HS × {JP,KR,EU,US,UK}
   importer-reported, quarterly; stores raw pull, upserts `trade_flows`. Behind a source seam +
   local fixture. **Acceptance:** one command populates the DB from a cached/fixture pull; re-run is idempotent.
+  → **DONE:** `python -m tradepulse_etl` loads 42 rows into `data/tradepulse.sqlite`; stdlib-only;
+  source seam (fixture/comtrade); 2 offline tests green (populate + idempotent + raw-persisted).
 - [ ] **1.2 — Signal compute (+ deterministic test).** Pure function over `trade_flows` → `signals`
   (YoY delta, noise floors, bands per plan §6). **Acceptance:** offline test asserts every band
   boundary + every noise-floor rejection; no network, no LLM.

@@ -17,12 +17,12 @@
 
 ## Phase 1 — MVP — IN PROGRESS (ADR-0002) — 6–8 weeks
 **Goal:** global map + pilot vertical full depth + watch/alerts + payments (plan §13).
-Skeleton (1.1–1.3) building in parallel with Stage 0; depth 1.6–1.9 waits for Stage 0 GO.
-Batches (locked in ADR-0002):
+Building sequentially toward a localhost-runnable MVP (owner direction). Walking skeleton =
+1.1→1.2→1.3. Depth 1.6–1.9 still advised to wait for Stage 0 GO (plan §12). Batches (ADR-0002):
 
 | # | Task | Status |
 |---|------|--------|
-| 1.1 | ETL: Comtrade quarterly pull → `trade_flows` (raw-before-transform, cached) | ⬜ |
+| 1.1 | ETL: Comtrade quarterly pull → `trade_flows` (raw-before-transform, cached) | ✅ |
 | 1.2 | Signal compute: deterministic YoY bands over `trade_flows` (+ offline test) | ⬜ |
 | 1.3 | Layer 1: global choropleth map + signal feed (Next.js SSR) | ⬜ |
 | 1.4 | Category search: everyday words → HS chip (30–50 hand-mapped codes) | ⬜ |
