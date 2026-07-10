@@ -45,9 +45,12 @@ batches. Everything downstream of the skeleton is *widening*, not *de-risking*.
   boundary + every noise-floor rejection; no network, no LLM.
   → **DONE:** `signals.py` (PURE, `now_iso` injected) + `export.py` writes the web JSON snapshot;
   fixture yields JP significant↑, KR significant↓, EU/GB moderate, US suppressed. +6 tests (8 total) green.
-- [ ] **1.3 — Layer 1: choropleth map + signal feed.** Next.js SSR page: D3 choropleth (value +
+- [x] **1.3 — Layer 1: choropleth map + signal feed.** Next.js SSR page: D3 choropleth (value +
   YoY tile), side signal feed (moderate+), honest period labels. **Acceptance:** renders real
   pellet data from `signals`; export/import toggle works; builds + lints clean.
+  → **DONE:** `web/` Next.js App Router (JS) reads the snapshot; SSR d3-geo choropleth colored by
+  band + market tiles + feed + SAMPLE banner + VN/EN. `npm run build` clean; runs on `localhost:3200`.
+  (Export/import toggle deferred to a later batch — import side is the plan default; noted.)
 - [ ] **1.4 — Category search → HS chip.** Everyday-word box (VN/EN) → 30–50 hand-mapped HS
   lookup → chip; map re-renders per product. **Acceptance:** "trà"/"pellet" resolves to the right HS.
 - [ ] **1.5 — Country drill-down + sourcing chart.** Within-country signals + top partners with

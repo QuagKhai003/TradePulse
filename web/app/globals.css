@@ -1,0 +1,88 @@
+/*
+ * globals.css — TradePulse Layer-1 styling.
+ * @context  One stylesheet for the MVP screen. Neutral slate palette, map-first layout.
+ * @limits   Plain CSS (no framework) to keep the MVP dependency-light.
+ */
+:root {
+  --bg: #f7f9fc;
+  --panel: #ffffff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --accent: #0ea5e9;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.muted { color: var(--muted); }
+h1 { font-size: 20px; margin: 0 0 12px; font-weight: 650; }
+h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 12px; }
+
+.page { max-width: 1180px; margin: 0 auto; padding: 20px; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; }
+.brand { display: flex; align-items: baseline; gap: 12px; }
+.logo { font-size: 20px; font-weight: 750; letter-spacing: -.01em; }
+.tagline { color: var(--muted); font-size: 13px; }
+.langswitch {
+  font-size: 13px; color: var(--ink); text-decoration: none;
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; background: var(--panel);
+}
+.langswitch:hover { border-color: var(--accent); color: var(--accent); }
+
+.samplebar {
+  background: #fef3c7; color: #92400e; border: 1px solid #fde68a;
+  border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; margin-bottom: 16px;
+}
+
+.subhead { margin-bottom: 16px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 12px; font-size: 13px;
+}
+.chip.hs { font-variant-numeric: tabular-nums; background: #ecfeff; border-color: #a5f3fc; color: #0e7490; font-weight: 600; }
+
+.grid { display: grid; grid-template-columns: 1fr 340px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.mapcol { min-width: 0; }
+.worldmap {
+  width: 100%; height: auto; display: block;
+  background: linear-gradient(180deg, #f8fbff, #eef4fb);
+  border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+}
+
+.markets { margin-top: 18px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.tile {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px; box-shadow: var(--shadow);
+}
+.tile-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.tile-name { font-weight: 650; }
+.tile-badge { color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.tile-value { font-size: 26px; font-weight: 750; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.tile-meta { margin: 4px 0; font-size: 13px; }
+.tile-yoy { font-weight: 650; font-variant-numeric: tabular-nums; }
+.tile-share { font-size: 13px; margin-top: 6px; }
+.tile-period { font-size: 12px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+.feed { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); position: sticky; top: 20px; }
+.feed-note { font-size: 12px; margin: -6px 0 12px; }
+.feed ul { list-style: none; margin: 0; padding: 0; }
+.feed-item { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.feed-item:first-child { border-top: none; }
+.dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex: none; }
+.feed-body { min-width: 0; }
+.feed-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.feed-band { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.feed-sub { font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+.disclaimer { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; }
+.empty { padding: 40px; text-align: center; color: var(--muted); font-family: ui-monospace, monospace; }

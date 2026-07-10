@@ -3,22 +3,27 @@
 > Single source of truth for the CURRENT moment. Update at the start and end of every
 > session. History goes in `docs/progress/`, not here.
 
-**Last updated:** 2026-07-10 (batch 1.2 signals + snapshot done + merged; next = 1.3 Next.js map)
+**Last updated:** 2026-07-10 (batch 1.3 map done + merged — WALKING SKELETON RUNS ON localhost:3200)
 
 ## Phase
 **Phase 1 MVP — sequential build (owner direction).** Stage 0 validation deferred (ADR-0001 on
 record). Goal this stretch: a Next.js app runnable on `localhost` showing pellet demand signals.
 
 ## Active task
-**Phase 1 — ADR-0002 — batches 1.1 + 1.2 DONE (merged to `main`).** ETL loads `trade_flows`,
-`signals.compute_signals` (PURE) fills `signals`, `export.py` writes `web/public/data/snapshot.json`.
-`python -m tradepulse_etl` → flows=42, signals=8, feed=4. 8 offline tests green.
-**NEXT: batch 1.3** — Next.js app (branch `phase/1-map`): D3/SVG choropleth + signal feed reading
-the snapshot; export/import toggle, honest period + SAMPLE labels, VN default. First localhost render.
+**Phase 1 — ADR-0002 — batches 1.1 + 1.2 + 1.3 DONE (merged to `main`). Walking skeleton runs.**
+ETL → `trade_flows` → `signals` (PURE) → `web/public/data/snapshot.json` → Next.js SSR map + feed
++ tiles. Build clean; verified serving on `localhost:3200` (JP/KR significant, GB moderate, US none).
+**NEXT: batch 1.4** — product/category search (branch `phase/1-search`): everyday VN/EN words →
+HS chip (30–50 hand-mapped codes); map re-renders per product. Widens the skeleton.
+
+## How to run right now (localhost MVP)
+```
+cd etl && python -m tradepulse_etl        # build data + snapshot (stdlib, no pip)
+cd ../web && npm install && npm run dev    # http://localhost:3200  (?lang=en)
+```
 
 ## Next action (whoever picks this up)
-- Batch 1.3: scaffold `web/` (Next.js), render map + feed from `snapshot.json` → `npm run dev` on localhost.
-- Rebuild data anytime: `cd etl && python -m tradepulse_etl` (regenerates the snapshot).
+- Batch 1.4 search, then 1.5 country drill-down. (Depth 1.6–1.9 still advised behind Stage 0 GO.)
 - Confirm Golden Rule wording ("Inform, never match" — CLAUDE.md).
 - Decide pilot-vertical fallback if pellets stall (tea/seafood/cashew — plan §15 Q1).
 

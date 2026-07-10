@@ -47,15 +47,22 @@ trade-signal-terminal-plan.md   # full product vision (source of truth for scope
 ```
 
 ## How to run
-```
-# No app yet — current phase is Stage 0 (validation, no code). See docs/STATUS.md.
-# Run targets will be added to this block when Phase 1 scaffolding lands.
+```bash
+# 1) build the Layer-1 data snapshot (Python 3.11+, stdlib only — no pip)
+cd etl && python -m tradepulse_etl          # -> data/tradepulse.sqlite + web/public/data/snapshot.json
+python -m unittest discover -s tests        # 8 offline tests
+
+# 2) run the web app
+cd ../web && npm install                     # first time only
+npm run dev                                  # -> http://localhost:3200  (?lang=en for English)
 ```
 
 ## Current state (read docs/STATUS.md for live detail)
-- **Stage 0 — validation, NO code** (plan §12). Build nothing until the go/kill gate passes.
-- Repo bootstrapped with the file-driven workflow (this kit). Active work tracked in ADR-0001.
-- **Tests:** none yet (no code).
+- **Phase 1 MVP — walking skeleton runs on localhost** (owner chose sequential build over the
+  Stage 0 gate). ETL → signals → snapshot → Next.js choropleth + signal feed + market tiles.
+- **Data is SAMPLE (fixture), labelled everywhere.** Swap to real Comtrade before any launch.
+- Batches 1.1–1.3 done + merged. Next: 1.4 product search.
+- **Tests:** 8 offline (ETL + deterministic signal math). `cd etl && python -m unittest discover -s tests`.
 
 ## New here?
 Start at `docs/ONBOARDING.md`. `docs/CONVENTIONS.md` is the mandatory hygiene contract.

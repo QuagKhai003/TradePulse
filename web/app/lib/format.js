@@ -1,0 +1,70 @@
+/**
+ * format.js — display helpers + signal-band presentation (single source of truth for colours).
+ * @context  Keeps money/percent formatting and band colour/label in ONE place so the map, tiles,
+ *           and feed always agree. Bilingual band labels (plan §7.2 VN-first).
+ * @limits   PURE presentation. No data fetching.
+ * @affects  Used by WorldMap, MarketTile, SignalFeed.
+ */
+
+export function fmtUSD(v) {
+  if (v == null) return "—";
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `$${(v / 1e6).toFixed(0)}M`;
+  if (abs >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
+export function fmtPct(x) {
+  if (x == null) return "—";
+  const s = (x * 100).toFixed(1);
+  return `${x >= 0 ? "+" : ""}${s}%`;
+}
+
+export function fmtTons(kg) {
+  if (kg == null) return null;
+  const t = kg / 1000;
+  if (t >= 1e6) return `${(t / 1e6).toFixed(2)}M t`;
+  if (t >= 1e3) return `${(t / 1e3).toFixed(0)}K t`;
+  return `${t.toFixed(0)} t`;
+}
+
+// Band metadata: bilingual label + neutral (no-direction) glyph.
+export const BANDS = {
+  surge:       { vi: "Bùng nổ",           en: "Surge" },
+  significant: { vi: "Tăng đáng kể",       en: "Significant" },
+  moderate:    { vi: "Tăng vừa",           en: "Moderate" },
+  collapse:    { vi: "Sụp đổ",             en: "Collapse" },
+  new:         { vi: "Tuyến mới",          en: "New lane" },
+  minor:       { vi: "Không đáng kể",      en: "Minor" },
+  none:        { vi: "Chưa đủ dữ liệu",    en: "No signal" },
+};
+
+export function bandLabel(band, lang) {
+  const b = BANDS[band] || BANDS.none;
+  return lang === "en" ? b.en : b.vi;
+}
+
+// Arrow reflects direction for magnitude bands; fixed glyph for surge/collapse/new.
+export function bandArrow(band, direction) {
+  if (band === "surge") return "▲▲";
+  if (band === "collapse") return "▼▼";
+  if (band === "new") return "★";
+  if (band === "significant" || band === "moderate") return direction === "down" ? "▼" : "▲";
+  return "";
+}
+
+// Colour by band + direction. Greens = growing demand, reds = shrinking.
+export function bandColor(band, direction) {
+  switch (band) {
+    case "surge": return "#15803d";
+    case "collapse": return "#b91c1c";
+    case "significant": return direction === "down" ? "#ef4444" : "#22c55e";
+    case "moderate": return direction === "down" ? "#fca5a5" : "#86efac";
+    case "new": return "#8b5cf6";
+    case "minor": return "#cbd5e1";
+    default: return "#e2e8f0";
+  }
+}
+
+export const MAP_NEUTRAL = "#eef2f7"; // countries with no covered data

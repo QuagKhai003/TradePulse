@@ -1,0 +1,20 @@
+{
+  "name": "tradepulse-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TradePulse — Layer 1 demand map + signal feed (reads the ETL snapshot).",
+  "scripts": {
+    "dev": "next dev -p 3200",
+    "build": "next build",
+    "start": "next start -p 3200",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "15.5.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "d3-geo": "3.1.1",
+    "topojson-client": "3.1.0",
+    "world-atlas": "2.0.2"
+  }
+}

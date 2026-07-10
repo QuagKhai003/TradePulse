@@ -18,6 +18,7 @@ The Next.js app reads this file (not SQLite directly — seam). Shape:
 `{ generated_at, hs6, product{name_en,name_vi}, flow, latest_period, is_sample, sources[],
 markets[ {slug,reporter,name_en,name_vi,period,published_date,value_usd,quantity,qty_unit,
 yoy_delta,band,direction,vn_share,history[{period,value_usd}]} ], feed[ moderate+ markets ] }`.
+Consumed by `web/app/lib/snapshot.js` → rendered SSR by `web/app/page.js` (batch 1.3).
 
 ## Planned persistence (PostgreSQL — Phase 1)
 Documented before code so the schema is decided up front. Metric rule: store trade **value
