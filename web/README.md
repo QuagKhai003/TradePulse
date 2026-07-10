@@ -2,22 +2,21 @@
 
 Next.js (App Router, JS) + d3-geo choropleth. Reads the ETL snapshot — no DB binding.
 
-## Run (localhost)
+## Run (ONE command)
 ```bash
-# 1) build the data snapshot first (from repo root)
-cd etl && python -m tradepulse_etl        # writes web/public/data/snapshot.json
-
-# 2) run the app
-cd ../web && npm install                  # first time only
-npm run dev                               # -> http://localhost:3200
+npm install && npm run dev                # -> http://localhost:3200
 ```
-Port is **3200** (3000 is often taken). `?lang=en` toggles English (Vietnamese is default).
+`npm run dev` first runs `scripts/prepare-data.mjs` (npm `predev` hook): auto-fetches the real
+Comtrade snapshot when missing (blocks) or stale >24h (background), else skips. Force refresh:
+`npm run data`. Port **3200**. `?lang=en` toggles English (VN default). Real quarterly + partner
+data needs the free Comtrade key in `etl/.env` (see `etl/.env.example`).
 
 ## What renders (plan §7.1)
 - SSR world choropleth colored by demand signal band (covered markets only).
 - Market tiles: value + YoY band + Vietnam import share + honest period/published labels.
 - Signal feed: moderate+ signals, ranked by severity then value.
-- SAMPLE-DATA banner while the source is the offline fixture.
+- Country drill-down (`/market/[slug]`): partner shares + YoY + sourcing chart (real, when keyed).
+- SAMPLE-DATA banner only while the source is the offline fixture (real Comtrade hides it).
 
 ## Layout
 ```

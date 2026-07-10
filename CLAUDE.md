@@ -46,16 +46,14 @@ trade-signal-terminal-plan.md   # full product vision (source of truth for scope
 # content/     # Layer-3 requirement pages (markdown, one per product × market)
 ```
 
-## How to run
+## How to run (ONE command)
 ```bash
-# 1) build the Layer-1 data snapshot (Python 3.11+, stdlib only — no pip)
-cd etl && python -m tradepulse_etl          # -> data/tradepulse.sqlite + web/public/data/snapshot.json
-python -m unittest discover -s tests        # 8 offline tests
-
-# 2) run the web app
-cd ../web && npm install                     # first time only
-npm run dev                                  # -> http://localhost:3200  (?lang=en for English)
+cd web && npm install && npm run dev     # -> http://localhost:3200  (?lang=en)
 ```
+`npm run dev` auto-runs the ETL first (`predev` → `scripts/prepare-data.mjs`): fetches REAL Comtrade
+data if the snapshot is missing (waits) or stale >24h (background), else skips. Force refresh: `npm run data`.
+Comtrade key lives in `etl/.env` (gitignored) → authenticated = quarterly + partners; no key = annual.
+Offline Python tests: `cd etl && python -m unittest discover -s tests` (22).
 
 ## Current state (read docs/STATUS.md for live detail)
 - **Phase 1 MVP COMPLETE — runs on `localhost:3200`** (owner chose sequential build over the Stage 0

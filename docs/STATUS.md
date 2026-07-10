@@ -3,12 +3,12 @@
 > Single source of truth for the CURRENT moment. Update at the start and end of every
 > session. History goes in `docs/progress/`, not here.
 
-**Last updated:** 2026-07-11 (MVP complete + running on REAL Comtrade data; annual World-only)
+**Last updated:** 2026-07-11 (one-command `npm run dev`; REAL quarterly + partner Comtrade data)
 
 ## Phase
-**Phase 1 MVP — COMPLETE, now on real trade data.** Runs on `localhost:3200`. Layer-1 map/signals
-use REAL UN Comtrade figures (`--source comtrade`, annual World-only — L-003). Profiles + Layer-3
-requirements remain SAMPLE (curation pending). Stage 0 validation still deferred (ADR-0001).
+**Phase 1 MVP — COMPLETE, on real quarterly data, one-command run.** `npm run dev` auto-fetches.
+Layer-1 map/signals + drill-down sourcing use REAL UN Comtrade (authenticated, quarterly + partners,
+key in `etl/.env`). Profiles + Layer-3 requirements remain SAMPLE (curation pending). Stage 0 deferred.
 
 ## Active task
 **Phase 1 — ADR-0002 — DONE (1.1–1.9 merged to `main`).** Shipped: Layer-1 map + deterministic
@@ -17,12 +17,11 @@ profiles, Layer-3 requirement pages, watch/alerts engine + telemetry, and the fr
 (cookie + test-mode checkout). 15 offline Python tests green; web build clean.
 **NEXT: nothing queued.** Options below — owner picks.
 
-## How to run (localhost MVP)
+## How to run (ONE command)
 ```
-# optional: put a FREE Comtrade key in etl/.env (see etl/.env.example) -> quarterly + partners
-cd etl && python -m tradepulse_etl --source comtrade   # REAL data (keyed=quarterly, keyless=annual)
-#   or: python -m tradepulse_etl                        # offline SAMPLE fixture (instant)
-cd ../web && npm install && npm run dev                 # http://localhost:3200  (?lang=en)
+cd web && npm install && npm run dev     # http://localhost:3200  — auto-fetches real data first
+#   npm run data                          # force a data refresh
+#   offline sample instead: cd etl && python -m tradepulse_etl   (fixture)
 ```
 
 ## Next action (owner picks)
