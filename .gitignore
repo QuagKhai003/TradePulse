@@ -49,6 +49,8 @@ playwright-report/
 # --- Data pulls & caches (raw trade data is re-pullable, not source) ---
 data/raw/
 data/cache/
+# generated web snapshot (rebuilt by the ETL; not source)
+web/public/data/snapshot.json
 *.duckdb
 *.sqlite
 *.sqlite3

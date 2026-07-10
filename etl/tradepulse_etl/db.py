@@ -72,3 +72,29 @@ def upsert_trade_flows(conn: sqlite3.Connection, rows: list[dict]) -> int:
 
 def count_trade_flows(conn: sqlite3.Connection) -> int:
     return conn.execute("SELECT COUNT(*) FROM trade_flows").fetchone()[0]
+
+
+def fetch_flows(conn: sqlite3.Connection, flow: str | None = None) -> list[dict]:
+    """All trade_flows rows (optionally one flow direction) as plain dicts."""
+    sql = "SELECT * FROM trade_flows"
+    params: tuple = ()
+    if flow is not None:
+        sql += " WHERE flow = ?"
+        params = (flow,)
+    return [dict(r) for r in conn.execute(sql, params).fetchall()]
+
+
+def upsert_signals(conn: sqlite3.Connection, rows: list[dict]) -> int:
+    """Recompute is a full replace for the cells touched — idempotent on the natural key."""
+    sql = """
+        INSERT INTO signals
+            (reporter, hs6, flow, period, value_usd, base_usd, yoy_delta, band, computed_at)
+        VALUES
+            (:reporter, :hs6, :flow, :period, :value_usd, :base_usd, :yoy_delta, :band, :computed_at)
+        ON CONFLICT(reporter, hs6, flow, period) DO UPDATE SET
+            value_usd=excluded.value_usd, base_usd=excluded.base_usd, yoy_delta=excluded.yoy_delta,
+            band=excluded.band, computed_at=excluded.computed_at
+    """
+    with conn:
+        conn.executemany(sql, rows)
+    return len(rows)

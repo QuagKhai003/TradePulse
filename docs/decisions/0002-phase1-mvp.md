@@ -40,9 +40,11 @@ batches. Everything downstream of the skeleton is *widening*, not *de-risking*.
   local fixture. **Acceptance:** one command populates the DB from a cached/fixture pull; re-run is idempotent.
   → **DONE:** `python -m tradepulse_etl` loads 42 rows into `data/tradepulse.sqlite`; stdlib-only;
   source seam (fixture/comtrade); 2 offline tests green (populate + idempotent + raw-persisted).
-- [ ] **1.2 — Signal compute (+ deterministic test).** Pure function over `trade_flows` → `signals`
+- [x] **1.2 — Signal compute (+ deterministic test).** Pure function over `trade_flows` → `signals`
   (YoY delta, noise floors, bands per plan §6). **Acceptance:** offline test asserts every band
   boundary + every noise-floor rejection; no network, no LLM.
+  → **DONE:** `signals.py` (PURE, `now_iso` injected) + `export.py` writes the web JSON snapshot;
+  fixture yields JP significant↑, KR significant↓, EU/GB moderate, US suppressed. +6 tests (8 total) green.
 - [ ] **1.3 — Layer 1: choropleth map + signal feed.** Next.js SSR page: D3 choropleth (value +
   YoY tile), side signal feed (moderate+), honest period labels. **Acceptance:** renders real
   pellet data from `signals`; export/import toggle works; builds + lints clean.

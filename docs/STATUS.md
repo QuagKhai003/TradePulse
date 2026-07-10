@@ -3,22 +3,22 @@
 > Single source of truth for the CURRENT moment. Update at the start and end of every
 > session. History goes in `docs/progress/`, not here.
 
-**Last updated:** 2026-07-10 (batch 1.1 ETL done + merged; building skeleton toward localhost MVP)
+**Last updated:** 2026-07-10 (batch 1.2 signals + snapshot done + merged; next = 1.3 Next.js map)
 
 ## Phase
 **Phase 1 MVP — sequential build (owner direction).** Stage 0 validation deferred (ADR-0001 on
 record). Goal this stretch: a Next.js app runnable on `localhost` showing pellet demand signals.
 
 ## Active task
-**Phase 1 — ADR-0002 — batch 1.1 DONE (merged to `main`).** Python ETL (`etl/`, stdlib-only)
-pulls pellet HS × 5 markets behind a source seam (fixture offline / Comtrade live), stores raw,
-upserts `trade_flows` in `data/tradepulse.sqlite`. `python -m tradepulse_etl` = 42 rows; 2 tests green.
-**NEXT: batch 1.2** — signal compute (branch `phase/1-signals`): pure YoY bands over `trade_flows`
-→ `signals` + export a `web/` JSON snapshot; deterministic offline test on every band + noise floor.
+**Phase 1 — ADR-0002 — batches 1.1 + 1.2 DONE (merged to `main`).** ETL loads `trade_flows`,
+`signals.compute_signals` (PURE) fills `signals`, `export.py` writes `web/public/data/snapshot.json`.
+`python -m tradepulse_etl` → flows=42, signals=8, feed=4. 8 offline tests green.
+**NEXT: batch 1.3** — Next.js app (branch `phase/1-map`): D3/SVG choropleth + signal feed reading
+the snapshot; export/import toggle, honest period + SAMPLE labels, VN default. First localhost render.
 
 ## Next action (whoever picks this up)
-- Batch 1.2 signals (+test + web snapshot), then 1.3 Next.js map → first localhost render.
-- Run so far: `cd etl && python -m tradepulse_etl` then `python -m unittest discover -s tests`.
+- Batch 1.3: scaffold `web/` (Next.js), render map + feed from `snapshot.json` → `npm run dev` on localhost.
+- Rebuild data anytime: `cd etl && python -m tradepulse_etl` (regenerates the snapshot).
 - Confirm Golden Rule wording ("Inform, never match" — CLAUDE.md).
 - Decide pilot-vertical fallback if pellets stall (tea/seafood/cashew — plan §15 Q1).
 

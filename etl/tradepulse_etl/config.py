@@ -12,6 +12,11 @@ config.py — pilot-scope constants for the ETL.
 # --- Pilot vertical: wood pellets (plan §3) ---
 HS_PELLETS = ["440131"]  # HS-6 wood pellets. Displayed as an educational badge, never an input.
 
+# HS-6 -> bilingual product name (everyday words, plan §7.2). Widen with each vertical.
+PRODUCTS = {
+    "440131": {"name_en": "Wood pellets", "name_vi": "Viên nén gỗ"},
+}
+
 # --- Destination markets (plan §3): slug -> codes + bilingual names ---
 # reporter = the importing country whose customs report the flow (importer-reported default, §6.4).
 MARKETS = {

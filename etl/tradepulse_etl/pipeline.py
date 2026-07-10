@@ -29,6 +29,7 @@ def get_source(kind: str, period: str = "2025") -> TradeSource:
 
 
 def _store_raw(records: list[dict], source_name: str, raw_dir: Path) -> Path:
+    raw_dir = Path(raw_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
     path = raw_dir / f"{source_name}.json"
     path.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")

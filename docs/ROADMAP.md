@@ -23,7 +23,7 @@ Building sequentially toward a localhost-runnable MVP (owner direction). Walking
 | # | Task | Status |
 |---|------|--------|
 | 1.1 | ETL: Comtrade quarterly pull → `trade_flows` (raw-before-transform, cached) | ✅ |
-| 1.2 | Signal compute: deterministic YoY bands over `trade_flows` (+ offline test) | ⬜ |
+| 1.2 | Signal compute: deterministic YoY bands over `trade_flows` (+ offline test) | ✅ |
 | 1.3 | Layer 1: global choropleth map + signal feed (Next.js SSR) | ⬜ |
 | 1.4 | Category search: everyday words → HS chip (30–50 hand-mapped codes) | ⬜ |
 | 1.5 | Country drill-down + historical sourcing chart | ⬜ |
