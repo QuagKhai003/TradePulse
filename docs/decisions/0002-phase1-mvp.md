@@ -51,8 +51,11 @@ batches. Everything downstream of the skeleton is *widening*, not *de-risking*.
   → **DONE:** `web/` Next.js App Router (JS) reads the snapshot; SSR d3-geo choropleth colored by
   band + market tiles + feed + SAMPLE banner + VN/EN. `npm run build` clean; runs on `localhost:3200`.
   (Export/import toggle deferred to a later batch — import side is the plan default; noted.)
-- [ ] **1.4 — Category search → HS chip.** Everyday-word box (VN/EN) → 30–50 hand-mapped HS
+- [x] **1.4 — Category search → HS chip.** Everyday-word box (VN/EN) → 30–50 hand-mapped HS
   lookup → chip; map re-renders per product. **Acceptance:** "trà"/"pellet" resolves to the right HS.
+  → **DONE:** `lib/catalog.js` (diacritic-insensitive search; pellets covered + 6 candidate verticals
+  locked) + `SearchBox` autocomplete; `?hs=` switches product. Uncovered → `LockedProduct` "coming
+  soon — request it" with telemetry to `/api/locked-click` (NDJSON, §7.6). Build clean; verified.
 - [ ] **1.5 — Country drill-down + sourcing chart.** Within-country signals + top partners with
   shares/YoY + historical sourcing chart. **Acceptance:** JP pellet page shows partner shares over time.
 - [ ] **1.6 — Layer 2: profiles.** Curated buyer/seller names + public profile/source links

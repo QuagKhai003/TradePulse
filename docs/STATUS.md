@@ -3,18 +3,19 @@
 > Single source of truth for the CURRENT moment. Update at the start and end of every
 > session. History goes in `docs/progress/`, not here.
 
-**Last updated:** 2026-07-10 (batch 1.3 map done + merged — WALKING SKELETON RUNS ON localhost:3200)
+**Last updated:** 2026-07-10 (batch 1.4 search + locked pages done + merged; next = 1.5 drill-down)
 
 ## Phase
 **Phase 1 MVP — sequential build (owner direction).** Stage 0 validation deferred (ADR-0001 on
 record). Goal this stretch: a Next.js app runnable on `localhost` showing pellet demand signals.
 
 ## Active task
-**Phase 1 — ADR-0002 — batches 1.1 + 1.2 + 1.3 DONE (merged to `main`). Walking skeleton runs.**
-ETL → `trade_flows` → `signals` (PURE) → `web/public/data/snapshot.json` → Next.js SSR map + feed
-+ tiles. Build clean; verified serving on `localhost:3200` (JP/KR significant, GB moderate, US none).
-**NEXT: batch 1.4** — product/category search (branch `phase/1-search`): everyday VN/EN words →
-HS chip (30–50 hand-mapped codes); map re-renders per product. Widens the skeleton.
+**Phase 1 — ADR-0002 — batches 1.1–1.4 DONE (merged to `main`).** Skeleton + product search live.
+ETL → signals → snapshot → Next.js SSR map/feed/tiles; SearchBox (VN/EN, diacritic-insensitive)
+switches product via `?hs=`; uncovered products show a locked "coming soon" page logging demand
+to `/api/locked-click`. Runs on `localhost:3200`.
+**NEXT: batch 1.5** — country drill-down (branch `phase/1-drilldown`): click a market → within-country
+view: top partner countries with shares + YoY, and a historical sourcing chart (free bilateral data).
 
 ## How to run right now (localhost MVP)
 ```

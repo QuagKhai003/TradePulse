@@ -51,6 +51,8 @@ data/raw/
 data/cache/
 # generated web snapshot (rebuilt by the ETL; not source)
 web/public/data/snapshot.json
+# locked-page telemetry capture (raw demand log)
+data/locked_clicks.ndjson
 *.duckdb
 *.sqlite
 *.sqlite3

@@ -8,6 +8,7 @@ const STRINGS = {
   vi: {
     tagline: "Ra-đa nhu cầu xuất khẩu",
     subtitle: "Nhu cầu thế giới đang dịch chuyển ở đâu — cho nhà xuất khẩu Việt Nam",
+    searchPlaceholder: "Tìm sản phẩm… (vd: viên nén, trà, cà phê, tôm)",
     product: "Sản phẩm",
     flowImport: "Nước nhập khẩu báo cáo",
     period: "Kỳ",
@@ -26,6 +27,7 @@ const STRINGS = {
   en: {
     tagline: "Export demand radar",
     subtitle: "Where world demand is moving — for Vietnamese exporters",
+    searchPlaceholder: "Search a product… (e.g. pellet, tea, coffee, shrimp)",
     product: "Product",
     flowImport: "Importer-reported",
     period: "Period",
