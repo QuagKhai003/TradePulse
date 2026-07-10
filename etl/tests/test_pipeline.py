@@ -30,8 +30,8 @@ class PipelineTest(unittest.TestCase):
         src = get_source("fixture")
 
         n1 = run(src, conn, raw_dir=self.raw)
-        self.assertEqual(n1, 42)                      # 7 series x 6 quarters
-        self.assertEqual(count_trade_flows(conn), 42)
+        self.assertEqual(n1, 84)                      # 5 world + JP(5)+KR(4) partner series x 6 quarters
+        self.assertEqual(count_trade_flows(conn), 84)
 
         # Known cell: Japan (392) x World (0) x 2026-Q1 import = $700M.
         row = conn.execute(
@@ -45,7 +45,7 @@ class PipelineTest(unittest.TestCase):
 
         # Idempotent: a second run keeps the row count identical (upsert, not insert).
         run(src, conn, raw_dir=self.raw)
-        self.assertEqual(count_trade_flows(conn), 42)
+        self.assertEqual(count_trade_flows(conn), 84)
 
     def test_raw_persisted_before_transform(self):
         conn = self._connect()

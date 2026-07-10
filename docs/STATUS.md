@@ -3,19 +3,19 @@
 > Single source of truth for the CURRENT moment. Update at the start and end of every
 > session. History goes in `docs/progress/`, not here.
 
-**Last updated:** 2026-07-10 (batch 1.4 search + locked pages done + merged; next = 1.5 drill-down)
+**Last updated:** 2026-07-10 (batch 1.5 country drill-down done + merged; next = 1.6 profiles)
 
 ## Phase
 **Phase 1 MVP — sequential build (owner direction).** Stage 0 validation deferred (ADR-0001 on
 record). Goal this stretch: a Next.js app runnable on `localhost` showing pellet demand signals.
 
 ## Active task
-**Phase 1 — ADR-0002 — batches 1.1–1.4 DONE (merged to `main`).** Skeleton + product search live.
-ETL → signals → snapshot → Next.js SSR map/feed/tiles; SearchBox (VN/EN, diacritic-insensitive)
-switches product via `?hs=`; uncovered products show a locked "coming soon" page logging demand
-to `/api/locked-click`. Runs on `localhost:3200`.
-**NEXT: batch 1.5** — country drill-down (branch `phase/1-drilldown`): click a market → within-country
-view: top partner countries with shares + YoY, and a historical sourcing chart (free bilateral data).
+**Phase 1 — ADR-0002 — batches 1.1–1.5 DONE (merged to `main`).** Map + search + drill-down live.
+Click a market tile → `/market/[slug]`: partner countries (share + YoY, VN highlighted) + SSR
+stacked-bar sourcing chart. Fixture now carries JP/KR partner breakdowns. Runs on `localhost:3200`.
+**NEXT: batch 1.6** — Layer 2 profiles (branch `phase/1-profiles`): curated buyer/seller **names +
+public source links** (FSC/SBP/PEFC, tenders, VIFOREST). **No contacts** (Golden Rule).
+⚠ 1.6–1.9 are the depth/curation/payments batches the plan gates behind Stage 0 GO — owner building through anyway.
 
 ## How to run right now (localhost MVP)
 ```

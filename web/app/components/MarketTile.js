@@ -4,15 +4,17 @@
  * @limits   Presentation only.
  * @affects  Rendered in the markets grid on page.js.
  */
+import Link from "next/link";
 import { bandArrow, bandColor, bandLabel, fmtPct, fmtUSD } from "../lib/format.js";
 
 export default function MarketTile({ m, lang, t }) {
   const name = lang === "en" ? m.name_en : m.name_vi;
   const hasSignal = m.band && m.band !== "none";
   const color = bandColor(m.band, m.direction);
+  const href = `/market/${m.slug}${lang === "en" ? "?lang=en" : ""}`;
 
   return (
-    <div className="tile">
+    <Link className="tile" href={href}>
       <div className="tile-head">
         <span className="tile-name">{name}</span>
         <span className="tile-badge" style={{ background: color }}>
@@ -35,6 +37,7 @@ export default function MarketTile({ m, lang, t }) {
         </div>
       )}
       <div className="tile-period muted">{m.period} · {t.published} {m.published_date}</div>
-    </div>
+      <div className="tile-cta">{t.viewDetail}</div>
+    </Link>
   );
 }

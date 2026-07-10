@@ -30,6 +30,17 @@ MARKETS = {
 PARTNER_WORLD = 0      # aggregate of all partners
 PARTNER_VIETNAM = 704  # for VN import-share on drill-down (plan §7.3)
 
+# Partner (exporter) code -> bilingual name, for the sourcing drill-down (plan §7.3).
+COUNTRY_NAMES = {
+    0:   {"en": "World",         "vi": "Thế giới"},
+    704: {"en": "Vietnam",       "vi": "Việt Nam"},
+    360: {"en": "Indonesia",     "vi": "Indonesia"},
+    458: {"en": "Malaysia",      "vi": "Malaysia"},
+    124: {"en": "Canada",        "vi": "Canada"},
+    842: {"en": "United States", "vi": "Hoa Kỳ"},
+    643: {"en": "Russia",        "vi": "Nga"},
+}
+
 FLOW_IMPORT = "M"      # importer-reported is the consistent default side (plan §6.4)
 FLOW_EXPORT = "X"
 

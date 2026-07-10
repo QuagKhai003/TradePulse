@@ -21,10 +21,12 @@ class FixtureSource:
     def __init__(self, path: Path | str = FIXTURE_PATH):
         self.path = Path(path)
 
-    def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int]) -> list[dict]:
+    def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int] | None) -> list[dict]:
         records = json.loads(self.path.read_text(encoding="utf-8"))
-        hs, rep, par = set(hs_codes), set(reporters), set(partners)
+        hs, rep = set(hs_codes), set(reporters)
+        par = set(partners) if partners else None   # None => all partners
         return [
             r for r in records
-            if r["cmdCode"] in hs and r["reporterCode"] in rep and r["partnerCode"] in par
+            if r["cmdCode"] in hs and r["reporterCode"] in rep
+            and (par is None or r["partnerCode"] in par)
         ]

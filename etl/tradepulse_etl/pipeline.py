@@ -37,9 +37,9 @@ def _store_raw(records: list[dict], source_name: str, raw_dir: Path) -> Path:
 
 
 def run(source: TradeSource, conn, *, raw_dir: Path = RAW_DIR) -> int:
-    partners = [config.PARTNER_WORLD, config.PARTNER_VIETNAM]
     reporters = [m["reporter"] for m in config.MARKETS.values()]
-    raw = source.pull(config.HS_PELLETS, reporters, partners)
+    # partners=None -> pull ALL partners (World + every exporter) so the drill-down has sourcing data.
+    raw = source.pull(config.HS_PELLETS, reporters, None)
     _store_raw(raw, source.name, raw_dir)
     rows = transform_all(raw, source.name)
     return upsert_trade_flows(conn, rows)

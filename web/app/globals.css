@@ -126,3 +126,33 @@ h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: v
 }
 .locked-btn:hover { background: #0284c7; }
 .locked-ok { color: #15803d; font-weight: 650; }
+
+/* tile as link */
+a.tile { text-decoration: none; color: inherit; display: block; transition: transform .08s, box-shadow .08s, border-color .08s; }
+a.tile:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 4px 12px rgba(15,23,42,.10); }
+.tile-cta { margin-top: 8px; font-size: 12px; font-weight: 650; color: var(--accent); }
+
+/* drill-down */
+.back { display: inline-block; margin-bottom: 12px; font-size: 13px; color: var(--muted); text-decoration: none; }
+.back:hover { color: var(--accent); }
+.logo { text-decoration: none; color: inherit; }
+.drillhead { margin-bottom: 18px; }
+.drillhead h1 { font-size: 22px; }
+.small { font-size: 12px; margin-top: 6px; }
+.drillgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .drillgrid { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+
+.ptable { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ptable th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.ptable td { padding: 8px; border-bottom: 1px solid var(--line); }
+.ptable .num { text-align: right; font-variant-numeric: tabular-nums; }
+.ptable tr:last-child td { border-bottom: none; }
+.vnrow { background: #ecfeff; }
+.vnflag { color: #0e7490; }
+
+.chart-svg { width: 100%; height: auto; display: block; }
+.chart-xlabel { font-size: 10px; fill: var(--muted); }
+.chart-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 10px 2px 0; margin: 0; font-size: 12px; color: var(--muted); }
+.chart-legend li { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }

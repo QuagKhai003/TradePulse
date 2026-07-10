@@ -26,7 +26,7 @@ class ComtradeSource:
         self.period = period  # e.g. "2025" (annual preview); real impl will do quarters
         self.timeout = timeout
 
-    def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int]) -> list[dict]:
+    def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int] | None) -> list[dict]:
         out: list[dict] = []
         for reporter in reporters:
             params = {
@@ -34,8 +34,9 @@ class ComtradeSource:
                 "period": self.period,
                 "cmdCode": ",".join(hs_codes),
                 "flowCode": "M",
-                "partnerCode": ",".join(str(p) for p in partners),
             }
+            if partners:                    # None -> let Comtrade return all partners
+                params["partnerCode"] = ",".join(str(p) for p in partners)
             url = f"{BASE}?{urllib.parse.urlencode(params)}"
             with urllib.request.urlopen(url, timeout=self.timeout) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))

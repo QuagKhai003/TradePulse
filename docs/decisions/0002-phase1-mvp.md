@@ -56,8 +56,11 @@ batches. Everything downstream of the skeleton is *widening*, not *de-risking*.
   → **DONE:** `lib/catalog.js` (diacritic-insensitive search; pellets covered + 6 candidate verticals
   locked) + `SearchBox` autocomplete; `?hs=` switches product. Uncovered → `LockedProduct` "coming
   soon — request it" with telemetry to `/api/locked-click` (NDJSON, §7.6). Build clean; verified.
-- [ ] **1.5 — Country drill-down + sourcing chart.** Within-country signals + top partners with
+- [x] **1.5 — Country drill-down + sourcing chart.** Within-country signals + top partners with
   shares/YoY + historical sourcing chart. **Acceptance:** JP pellet page shows partner shares over time.
+  → **DONE:** fixture extended with JP/KR partner breakdowns; `export.py` adds per-market partners
+  (share+YoY) + sourcing series; `/market/[slug]` renders `PartnerTable` (VN highlighted) + SSR
+  stacked-bar `SourcingChart`; tiles link in. Markets w/o partner data degrade gracefully. Build clean.
 - [ ] **1.6 — Layer 2: profiles.** Curated buyer/seller names + public profile/source links
   (FSC/SBP/PEFC, tender awards, VIFOREST). **No contact data.** **Acceptance:** ≥10 pellet profiles, each sourced.
 - [ ] **1.7 — Layer 3: requirement pages.** pellets→JP, →KR, →EU markdown pages per plan §8

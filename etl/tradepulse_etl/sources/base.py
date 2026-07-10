@@ -18,6 +18,6 @@ class TradeSource(Protocol):
 
     name: str
 
-    def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int]) -> list[dict]:
-        """Raw records for the given HS codes x reporters x partners (quarterly, import flow)."""
+    def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int] | None) -> list[dict]:
+        """Raw records for HS x reporters x partners (quarterly, import flow). partners=None => all."""
         ...
