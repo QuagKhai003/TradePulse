@@ -69,8 +69,9 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
     const c = g.controls();
     c.autoRotate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     c.autoRotateSpeed = 0.5;
-    c.enableZoom = false; c.enablePan = false;
-    c.minPolarAngle = 0.5; c.maxPolarAngle = Math.PI - 0.5;
+    c.enableZoom = true; c.enablePan = false;
+    c.minDistance = 140; c.maxDistance = 520;   // scroll to zoom, within bounds
+    c.zoomSpeed = 0.8;
     g.pointOfView({ lat: 14, lng: 108, altitude: 2.4 }, 0);
   }, [size.w]);
 
@@ -83,7 +84,6 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
         ref={globeRef}
         width={size.w}
         height={size.h}
-        backgroundImageUrl="/textures/night-sky.png"
         backgroundColor="rgba(0,0,0,0)"
         globeImageUrl="/textures/earth.jpg"
         bumpImageUrl="/textures/earth-topology.png"

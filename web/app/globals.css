@@ -306,7 +306,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
   position: relative; overflow: hidden; color: #e7ecf5;
   height: 100vh; display: flex; flex-direction: column;
   padding: clamp(12px,2vw,22px) clamp(16px,3vw,34px) clamp(12px,2vw,20px);
-  background: radial-gradient(1100px 720px at 72% 34%, #17224e 0%, #0b1230 46%, #070b1a 100%);
+  background:
+    radial-gradient(1100px 720px at 72% 34%, rgba(23,34,78,.5) 0%, rgba(11,18,48,.72) 46%, rgba(6,10,24,.88) 100%),
+    url("/textures/night-sky.png") center / cover no-repeat,
+    #05070f;
 }
 .hero-stars {
   position: absolute; inset: 0; pointer-events: none; opacity: .55;
@@ -372,7 +375,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 
 /* feed as glass on dark — scrolls internally so the page never scrolls */
 .hero-feedwrap { flex: 1; min-height: 0; overflow: hidden; display: flex; }
-.hero-feedwrap .feed { position: static; flex: 1; min-height: 0; height: 100%; overflow: auto; background: rgba(14,21,44,.62); backdrop-filter: blur(14px); border-color: rgba(124,142,196,.2); box-shadow: none; }
+.hero-feedwrap .feed { position: static; flex: 1; min-height: 0; height: 100%; overflow: auto; background: rgba(14,21,44,.62); backdrop-filter: blur(14px); border-color: rgba(124,142,196,.2); box-shadow: none; scrollbar-width: none; -ms-overflow-style: none; }
+.hero-feedwrap .feed::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .chip.on-dark.strong { color: #fff; font-weight: 700; border-color: rgba(124,142,196,.34); }
 .hero .feed h2 { color: #9fb0d0; }
 .hero .feed-note { color: #8ea3c8; }
