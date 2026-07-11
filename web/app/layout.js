@@ -7,8 +7,8 @@
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const sans = Inter({ subsets: ["latin", "latin-ext", "vietnamese"], variable: "--font-sans", display: "swap" });
-const display = Space_Grotesk({ subsets: ["latin", "latin-ext", "vietnamese"], variable: "--font-display", display: "swap", weight: ["500", "600", "700"] });
+const sans = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-sans", display: "swap" });
+const display = Space_Grotesk({ subsets: ["latin", "vietnamese"], variable: "--font-display", display: "swap", weight: ["600", "700"] });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata = {
