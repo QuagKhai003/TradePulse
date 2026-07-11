@@ -18,8 +18,9 @@ import Globe from "react-globe.gl";
 import { geoCentroid } from "d3-geo";
 import { feature } from "topojson-client";
 import worldData from "world-atlas/countries-110m.json";
-import borders50 from "world-atlas/countries-50m.json";
 import { fmtPct, fmtUSD } from "../lib/format.js";
+// NB: the 50m border data (~0.75MB) is dynamically imported on first zoom-in (see updateBorders),
+// so it stays OUT of the initial route compile + client bundle.
 
 const OVERRIDE = { 842: 840, 251: 250, 757: 756, 579: 578, 699: 356, 490: 158, 97: 0 };
 const norm = (v) => String(Number(v));
@@ -42,11 +43,31 @@ function toRings(features) {
   return rings;
 }
 
+// All country outlines → ONE LineSegments buffer (single draw call). Vertices via getCoords so they
+// sit exactly on the globe surface, aligned with the texture + signal points.
+function buildLines(g, rings) {
+  const pos = [];
+  for (const ring of rings) {
+    for (let i = 0; i < ring.length - 1; i++) {
+      const a = g.getCoords(ring[i][0], ring[i][1], 0.003);
+      const b = g.getCoords(ring[i + 1][0], ring[i + 1][1], 0.003);
+      pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
+    }
+  }
+  const geo = new BufferGeometry();
+  geo.setAttribute("position", new Float32BufferAttribute(pos, 3));
+  const lines = new LineSegments(geo, new LineBasicMaterial({ color: 0xbcd0f8, transparent: true, opacity: 0.5, depthWrite: false }));
+  lines.renderOrder = 1;
+  g.scene().add(lines);
+  return lines;
+}
+
 export default function GlobeInner({ countries, metric, hs, lang }) {
   const router = useRouter();
   const globeRef = useRef();
   const wrapRef = useRef();
   const linesRef = useRef(null);           // the single border LineSegments (built lazily, toggled)
+  const buildingRef = useRef(false);       // guard against double-building during the async import
   const [size, setSize] = useState({ w: 800, h: 620 });
 
   // Sharpen the globe texture at grazing angles (max anisotropic filtering) — the most detail a single
@@ -68,7 +89,6 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
   useEffect(() => { const id = setTimeout(bumpAniso, 1200); return () => clearTimeout(id); }, []);
 
   const features = useMemo(() => feature(worldData, worldData.objects.countries).features, []);
-  const borderRings = useMemo(() => toRings(feature(borders50, borders50.objects.countries).features), []);
 
   // Cleanup: drop the border geometry from the scene on unmount.
   useEffect(() => () => {
@@ -122,31 +142,21 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
     c.zoomSpeed = 0.8;
     g.pointOfView({ lat: 12, lng: 30, altitude: 1.6 }, 0);
 
-    // Build the border geometry once (first time it's needed) as a single LineSegments buffer.
-    const buildBorders = () => {
-      const pos = [];
-      for (const ring of borderRings) {
-        for (let i = 0; i < ring.length - 1; i++) {
-          const a = g.getCoords(ring[i][0], ring[i][1], 0.003);
-          const b = g.getCoords(ring[i + 1][0], ring[i + 1][1], 0.003);
-          pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
-        }
-      }
-      const geo = new BufferGeometry();
-      geo.setAttribute("position", new Float32BufferAttribute(pos, 3));
-      const lines = new LineSegments(geo, new LineBasicMaterial({ color: 0xbcd0f8, transparent: true, opacity: 0.5, depthWrite: false }));
-      lines.renderOrder = 1;
-      g.scene().add(lines);
-      return lines;
-    };
-
     // Show borders only near country level; hide (→ original globe) when zoomed back out. Hysteresis
-    // stops flicker at the boundary. Toggles .visible imperatively (no React re-render). End + wheel only.
-    const updateBorders = () => {
+    // stops flicker. The 50m data is dynamically imported on the FIRST zoom-in (off the initial bundle),
+    // built once into a single LineSegments, then just toggled by .visible (no React re-render).
+    const updateBorders = async () => {
       const dist = typeof c.getDistance === "function" ? c.getDistance() : g.camera().position.length();
       const show = dist < BORDER_IN ? true : dist > BORDER_OUT ? false : null;
       if (show === null) return;
-      if (show && !linesRef.current) linesRef.current = buildBorders();
+      if (show && !linesRef.current && !buildingRef.current) {
+        buildingRef.current = true;
+        try {
+          const mod = await import("world-atlas/countries-50m.json");
+          const g2 = globeRef.current;
+          if (g2) linesRef.current = buildLines(g2, toRings(feature(mod.default, mod.default.objects.countries).features));
+        } catch {}
+      }
       if (linesRef.current) linesRef.current.visible = show;
     };
 
