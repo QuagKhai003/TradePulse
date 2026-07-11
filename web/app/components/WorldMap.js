@@ -30,7 +30,7 @@ export default function WorldMap({ countries, metric, lang }) {
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="worldmap" role="img" aria-label="World trade signal map">
-      {fc.features.map((f) => {
+      {fc.features.map((f, i) => {
         const c = byId[norm(f.id)];
         const slot = c && c[metric];
         const fill = slot ? bandColor(slot.band, slot.direction) : MAP_NEUTRAL;
@@ -41,7 +41,7 @@ export default function WorldMap({ countries, metric, lang }) {
           ? `${nm} — ${lang === "en" ? "exp" : "XK"} ${fmtUSD(c.exp?.value_usd)} · ${lang === "en" ? "imp" : "NK"} ${fmtUSD(c.imp?.value_usd)}`
           : nm;
         return (
-          <path key={f.id} d={d} fill={fill}
+          <path key={i} d={d} fill={fill}
                 stroke={slot ? "#0f172a" : "#d7dee8"} strokeWidth={slot ? 0.6 : 0.3}>
             <title>{tip}</title>
           </path>
