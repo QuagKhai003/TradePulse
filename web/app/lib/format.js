@@ -29,15 +29,16 @@ export function fmtTons(kg) {
   return `${t.toFixed(0)} t`;
 }
 
-// Band metadata: bilingual label + neutral (no-direction) glyph.
+// Band metadata: bilingual MAGNITUDE label (no direction word — direction is carried by the
+// arrow, colour, and signed %). Keeps "significant" a decline from reading as a rise.
 export const BANDS = {
-  surge:       { vi: "Bùng nổ",           en: "Surge" },
-  significant: { vi: "Tăng đáng kể",       en: "Significant" },
-  moderate:    { vi: "Tăng vừa",           en: "Moderate" },
-  collapse:    { vi: "Sụp đổ",             en: "Collapse" },
-  new:         { vi: "Tuyến mới",          en: "New lane" },
-  minor:       { vi: "Không đáng kể",      en: "Minor" },
-  none:        { vi: "Chưa đủ dữ liệu",    en: "No signal" },
+  surge:       { vi: "Bùng nổ",         en: "Surge" },
+  significant: { vi: "Đáng kể",         en: "Significant" },
+  moderate:    { vi: "Vừa",             en: "Moderate" },
+  collapse:    { vi: "Sụp đổ",          en: "Collapse" },
+  new:         { vi: "Tuyến mới",       en: "New lane" },
+  minor:       { vi: "Nhẹ",             en: "Minor" },
+  none:        { vi: "Chưa đủ dữ liệu", en: "No signal" },
 };
 
 export function bandLabel(band, lang) {
@@ -68,3 +69,11 @@ export function bandColor(band, direction) {
 }
 
 export const MAP_NEUTRAL = "#eef2f7"; // countries with no covered data
+
+// Strong, readable colour for signal TEXT (the light band tints fail contrast on white).
+// Direction carries meaning: green = rising, red = falling.
+export function sigColor(band, direction) {
+  if (band === "new") return "#7c3aed";
+  if (band === "minor" || band === "none") return "#64748b";
+  return direction === "down" ? "#b91c1c" : "#15803d";
+}
