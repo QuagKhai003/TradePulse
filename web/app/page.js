@@ -12,6 +12,7 @@ import WorldMap from "./components/WorldMap.js";
 import GlobalFeed from "./components/GlobalFeed.js";
 import CountryTile from "./components/CountryTile.js";
 import SearchBox from "./components/SearchBox.js";
+import Legend from "./components/Legend.js";
 import LockedProduct from "./components/LockedProduct.js";
 import { loadSnapshot } from "./lib/snapshot.js";
 import { lookup } from "./lib/catalog.js";
@@ -80,7 +81,13 @@ export default async function Page({ searchParams }) {
 
           <section className="grid">
             <div className="mapcol">
-              <WorldMap countries={snap.countries} metric={metric} lang={lang} />
+              <div className="mappanel">
+                <div className="mappanel-head">
+                  <span className="mappanel-title">{tr.mapTitle} · {product} · {flow === "export" ? tr.flowExport : flow === "import" ? tr.flowImport : tr.flowAll}</span>
+                  <Legend lang={lang} />
+                </div>
+                <WorldMap countries={snap.countries} metric={metric} lang={lang} />
+              </div>
               <p className="maphint muted">{tr.clickCountry}</p>
               <div className="markets">
                 <h2>{tr.topCountries} · {snap.countries.length} {tr.allCountries}</h2>
