@@ -1,10 +1,12 @@
 "use client";
 /**
  * GlobeInner.js — realistic interactive 3D signal globe (react-globe.gl / three.js WebGL).
- * @context  A photoreal Earth (blue-marble texture + relief bump + starfield) with a glowing signal
- *           POINT on every country that has a signal for the chosen product+flow — colour = direction,
- *           height = value. Top movers emit pulsing rings (the "pulse"). Auto-rotates; drag to spin;
- *           click a point to drill in; hover for values. Client-only (three/window safe here).
+ * @context  ONE photoreal Earth (blue-marble texture + relief bump + starfield) — the same imagery at
+ *           every zoom, so the globe never changes appearance (zoom out = the original look). Crisp
+ *           vector COUNTRY BORDERS (50m) give clear boundaries at any zoom; max anisotropic filtering
+ *           keeps the texture as sharp as it can be at grazing angles. A glowing signal POINT sits on
+ *           every country with a signal (colour = direction, height = value); top movers pulse. Auto-
+ *           rotates after idle; drag to spin; click to drill; hover for values. Client-only.
  * @limits   Client-only. Colours reuse signal semantics (vivid on the dark globe).
  * @affects  Rendered by GlobeHero; data from the snapshot (countries + metric).
  */
@@ -14,6 +16,7 @@ import Globe from "react-globe.gl";
 import { geoCentroid } from "d3-geo";
 import { feature } from "topojson-client";
 import worldData from "world-atlas/countries-110m.json";
+import borders50 from "world-atlas/countries-50m.json";
 import { fmtPct, fmtUSD } from "../lib/format.js";
 
 const OVERRIDE = { 842: 840, 251: 250, 757: 756, 579: 578, 699: 356, 490: 158, 97: 0 };
@@ -25,12 +28,11 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
   const router = useRouter();
   const globeRef = useRef();
   const wrapRef = useRef();
-  const hiResRef = useRef(false);          // guard: swap to the 8k texture at most once
   const [size, setSize] = useState({ w: 800, h: 620 });
-  const [globeImg, setGlobeImg] = useState("/textures/earth.jpg");
 
-  // Sharpen every globe texture at grazing angles (max anisotropic filtering). react-globe.gl v2.38
-  // exposes globeMaterial as a PROP, not a ref method, so reach the material via the scene graph.
+  // Sharpen the globe texture at grazing angles (max anisotropic filtering) — the most detail a single
+  // texture can give without changing its appearance. react-globe.gl v2.38 exposes globeMaterial as a
+  // PROP, not a ref method, so reach the material via the scene graph.
   const bumpAniso = () => {
     const g = globeRef.current;
     if (!g) return;
@@ -43,10 +45,11 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
     } catch {}
   };
 
-  // After the (base or 8k) texture swaps in, wait a beat for it to load, then bump anisotropy.
-  useEffect(() => { const id = setTimeout(bumpAniso, 900); return () => clearTimeout(id); }, [globeImg]);
+  // Bump anisotropy once the base texture has loaded (onGlobeReady can fire before the map is set).
+  useEffect(() => { const id = setTimeout(bumpAniso, 1200); return () => clearTimeout(id); }, []);
 
   const features = useMemo(() => feature(worldData, worldData.objects.countries).features, []);
+  const borderFeatures = useMemo(() => feature(borders50, borders50.objects.countries).features, []);
   const byId = useMemo(() => {
     const m = {};
     for (const c of countries) if (c[metric]) m[norm(OVERRIDE[c.code] ?? c.code)] = c;
@@ -94,27 +97,12 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
     c.zoomSpeed = 0.8;
     g.pointOfView({ lat: 12, lng: 30, altitude: 1.6 }, 0);
 
-    // Progressive detail: the 4k base is crisp from afar but soft up close. The first time the user
-    // zooms past the threshold, lazily fetch the 8k texture and swap it into the globe material (with
-    // max anisotropy so it stays sharp at grazing angles). Fetched once, on demand — initial load is
-    // untouched (the 8k never downloads unless someone zooms in).
-    const maybeHiRes = () => {
-      if (hiResRef.current) return;
-      const dist = typeof c.getDistance === "function" ? c.getDistance() : g.camera().position.length();
-      if (dist > 230) return;
-      hiResRef.current = true;
-      // preload so the swap is flash-free, then hand the URL to react-globe.gl (it manages the map)
-      const img = new Image();
-      img.onload = () => setGlobeImg("/textures/earth-8k.jpg");
-      img.src = "/textures/earth-8k.jpg";
-    };
-
     let timer;
     const spinAfterIdle = () => { clearTimeout(timer); if (!reduced) timer = setTimeout(() => { c.autoRotate = true; }, 5000); };
     const stop = () => { clearTimeout(timer); c.autoRotate = false; };
     const onStart = () => stop();
-    const onEnd = () => { spinAfterIdle(); maybeHiRes(); };
-    const onWheel = () => { stop(); spinAfterIdle(); maybeHiRes(); };
+    const onEnd = () => spinAfterIdle();
+    const onWheel = () => { stop(); spinAfterIdle(); };
     const wrap = wrapRef.current;
     c.addEventListener("start", onStart);
     c.addEventListener("end", onEnd);
@@ -138,12 +126,17 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
         width={size.w}
         height={size.h}
         backgroundColor="rgba(0,0,0,0)"
-        globeImageUrl={globeImg}
+        globeImageUrl="/textures/earth.jpg"
         bumpImageUrl="/textures/earth-topology.png"
         onGlobeReady={bumpAniso}
         showAtmosphere
         atmosphereColor="#7c9bff"
         atmosphereAltitude={0.2}
+        polygonsData={borderFeatures}
+        polygonCapColor={() => "rgba(0,0,0,0)"}
+        polygonSideColor={() => "rgba(0,0,0,0)"}
+        polygonStrokeColor={() => "rgba(175,193,240,0.4)"}
+        polygonAltitude={0.004}
         pointsData={points}
         pointColor={(p) => hue(p.band, p.direction)}
         pointAltitude={(p) => 0.012 + 0.55 * Math.sqrt(p.val / maxVal)}
