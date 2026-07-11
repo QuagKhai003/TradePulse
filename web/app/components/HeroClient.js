@@ -8,7 +8,6 @@
  * @affects  Wraps GlobeHero / TopCountries / GlobalFeed / SearchBox / BrowseCountries / SortMenu.
  */
 import { useState } from "react";
-import { motion } from "framer-motion";
 import GlobeHero from "./GlobeHero.js";
 import GlobalFeed from "./GlobalFeed.js";
 import TopCountries from "./TopCountries.js";
@@ -18,14 +17,15 @@ import SortMenu from "./SortMenu.js";
 import MotionPanel from "./MotionPanel.js";
 import { t } from "../lib/i18n.js";
 
-function Segmented({ options, value, onChange, idBase, size = "md" }) {
+// Segmented pill with a CSS-transitioned sliding fill (no motion lib). Options are equal-width, so the
+// indicator just translates to the active index.
+function Segmented({ options, value, onChange, size = "md" }) {
+  const idx = Math.max(0, options.findIndex((o) => o.v === value));
   return (
     <div className={`seg seg-${size}`}>
+      <span className="seg-ind" style={{ width: `calc((100% - 6px) / ${options.length})`, transform: `translateX(${idx * 100}%)` }} />
       {options.map((o) => (
         <button key={o.v} type="button" className={`seg-opt ${value === o.v ? "on" : ""}`} onClick={() => onChange(o.v)}>
-          {value === o.v && (
-            <motion.span layoutId={idBase} className="seg-ind" transition={{ type: "spring", stiffness: 430, damping: 34 }} />
-          )}
           <span className="seg-label">{o.label}</span>
         </button>
       ))}

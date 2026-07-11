@@ -389,11 +389,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .panel-n { color: #b4c0f5; font-weight: 800; font-size: var(--fs-md); line-height: 1; margin-right: 4px; }
 
 /* animated segmented toggle (lang + flow) — sliding fill, no reload */
-.seg { position: relative; display: inline-flex; gap: 2px; background: rgba(20,29,58,.72); border: 1px solid rgba(140,160,210,.3); border-radius: var(--pill); padding: 3px; }
-.seg-opt { position: relative; isolation: isolate; border: none; background: none; cursor: pointer; padding: 0 15px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--pill); color: #c6d2ec; font-weight: 650; font-size: var(--fs-sm); font-family: var(--sans); transition: color .2s var(--ease); }
+.seg { position: relative; display: inline-flex; gap: 0; background: rgba(20,29,58,.72); border: 1px solid rgba(140,160,210,.3); border-radius: var(--pill); padding: 3px; }
+.seg-opt { position: relative; isolation: isolate; flex: 1 1 0; border: none; background: none; cursor: pointer; padding: 0 15px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--pill); color: #c6d2ec; font-weight: 650; font-size: var(--fs-sm); font-family: var(--sans); white-space: nowrap; transition: color .2s var(--ease); }
 .seg-opt.on { color: #fff; }
 .seg-opt:hover:not(.on) { color: #dbe3f3; }
-.seg-ind { position: absolute; inset: 0; z-index: 0; background: var(--brand); border-radius: var(--pill); }
+/* sliding fill — width + translateX set inline by the component (active index) */
+.seg-ind { position: absolute; top: 3px; bottom: 3px; left: 3px; z-index: 0; background: var(--brand); border-radius: var(--pill); transition: transform .28s var(--ease), width .28s var(--ease); }
 .seg-label { position: relative; z-index: 1; }
 .seg-sm .seg-opt { padding: 0 13px; min-height: 30px; font-size: var(--fs-sm); }
 
@@ -493,6 +494,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .belowfold { padding-top: 26px; }
 .markets-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
 .markets-head h2 { margin: 0; }
+
+/* panel + globe intro (CSS, replaces framer-motion) */
+.mpanel { animation-duration: .7s; animation-timing-function: var(--ease); animation-fill-mode: both; }
+.mpanel-left { animation-name: mpanel-left; }
+.mpanel-right { animation-name: mpanel-right; }
+.mpanel-top { animation-name: mpanel-top; }
+@keyframes mpanel-left { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+@keyframes mpanel-right { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes mpanel-top { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: none; } }
+.globe-intro { animation: globe-in 1.2s var(--ease) both; }
+@keyframes globe-in { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
 
 /* ============ motion ============ */
 @media (prefers-reduced-motion: reduce) {

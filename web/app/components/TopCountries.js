@@ -1,6 +1,6 @@
 /**
- * TopCountries.js — top-20 countries by total trade: export + import volume + YoY% (plan §7.1).
- * @context  Ranked by (export + import) value. Aligned columns; XK (export) / NK (import) shown as
+ * TopCountries.js — countries ranked by total trade: export + import volume + YoY% (plan §7.1).
+ * @context  ALL countries, ranked by (export + import) value, scrollable. Aligned columns; XK (export) / NK (import) shown as
  *           colour tags (green = export, indigo = import) so the flow is unmistakable. YoY colour =
  *           green rising / red falling. Click to drill in.
  * @limits   Presentation only; value/volume only.
@@ -23,11 +23,10 @@ function Flow({ tag, cls, slot }) {
 
 export default function TopCountries({ countries, lang, t, hs }) {
   const rows = [...countries]
-    .sort((a, b) => ((b.exp?.value_usd || 0) + (b.imp?.value_usd || 0)) - ((a.exp?.value_usd || 0) + (a.imp?.value_usd || 0)))
-    .slice(0, 20);
+    .sort((a, b) => ((b.exp?.value_usd || 0) + (b.imp?.value_usd || 0)) - ((a.exp?.value_usd || 0) + (a.imp?.value_usd || 0)));
   return (
     <div className="col-fill">
-      <div className="panel-h"><h2><b className="panel-n num">20</b> {t.topCountries}</h2></div>
+      <div className="panel-h"><h2>{t.topCountries}</h2></div>
       <ol className="tc-list scrollx">
         {rows.map((c, i) => (
           <li key={c.code} className="tc-row">
