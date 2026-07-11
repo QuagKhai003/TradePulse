@@ -15,7 +15,7 @@ HS_PELLETS = ["440131"]  # pilot vertical (kept for the fixture/tests)
 # HS-6 -> bilingual product name (everyday words). Add a code here to cover a new category.
 PRODUCTS = {
     "440131": {"name_en": "Wood pellets",     "name_vi": "Viên nén gỗ"},
-    "440710": {"name_en": "Sawn wood",        "name_vi": "Gỗ xẻ"},
+    "4407":   {"name_en": "Sawn wood",        "name_vi": "Gỗ xẻ"},   # HS-4 heading (broad group)
     "090240": {"name_en": "Black tea",        "name_vi": "Chè (trà) đen"},
     "090111": {"name_en": "Coffee",           "name_vi": "Cà phê"},
     "030617": {"name_en": "Frozen shrimp",    "name_vi": "Tôm đông lạnh"},
@@ -24,7 +24,7 @@ PRODUCTS = {
 }
 
 # The list the ETL pulls + exports a snapshot for. First = the landing default.
-COVERED_HS = ["440131", "440710", "090240", "090111", "030617", "080131", "100630"]
+COVERED_HS = ["440131", "4407", "090240", "090111", "030617", "080131", "100630"]
 
 # --- Destination markets (plan §3): slug -> codes + bilingual names ---
 # reporter = the importing country whose customs report the flow (importer-reported default, §6.4).

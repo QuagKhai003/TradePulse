@@ -14,8 +14,8 @@
 export const CATALOG = [
   { hs6: "440131", covered: true,  name_en: "Wood pellets",   name_vi: "Viên nén gỗ",
     synonyms: ["wood pellet", "pellet", "viên nén", "vien nen", "biomass", "chất đốt sinh khối"] },
-  { hs6: "440710", covered: true,  name_en: "Sawn wood",      name_vi: "Gỗ xẻ",
-    synonyms: ["sawn wood", "timber", "lumber", "gỗ xẻ", "go xe", "wood"] },
+  { hs6: "4407",   covered: true,  name_en: "Sawn wood",      name_vi: "Gỗ xẻ",
+    synonyms: ["sawn wood", "timber", "lumber", "gỗ xẻ", "go xe", "wood", "sawnwood"] },
   { hs6: "090240", covered: true,  name_en: "Black tea",      name_vi: "Chè (trà) đen",
     synonyms: ["tea", "black tea", "trà", "tra", "chè", "che"] },
   { hs6: "090111", covered: true,  name_en: "Coffee",         name_vi: "Cà phê",
