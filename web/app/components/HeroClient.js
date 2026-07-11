@@ -36,7 +36,7 @@ function Segmented({ options, value, onChange, idBase, size = "md" }) {
 export default function HeroClient({ snapshot, hs, initialLang, initialFlow }) {
   const [lang, setLang] = useState(initialLang);
   const [flow, setFlow] = useState(initialFlow);
-  const [sort, setSort] = useState("signal");
+  const [sort, setSort] = useState("value-desc");
   const tr = t(lang);
   const metric = flow === "export" ? "exp" : "imp";
   const isTotal = hs === "TOTAL";

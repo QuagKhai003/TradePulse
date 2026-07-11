@@ -10,6 +10,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TextureLoader, SRGBColorSpace } from "three";
 import Globe from "react-globe.gl";
 import { geoCentroid } from "d3-geo";
 import { feature } from "topojson-client";
@@ -25,6 +26,7 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
   const router = useRouter();
   const globeRef = useRef();
   const wrapRef = useRef();
+  const hiResRef = useRef(false);          // guard: fetch the 8k texture at most once
   const [size, setSize] = useState({ w: 800, h: 620 });
 
   const features = useMemo(() => feature(worldData, worldData.objects.countries).features, []);
@@ -75,12 +77,29 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
     c.zoomSpeed = 0.8;
     g.pointOfView({ lat: 12, lng: 30, altitude: 1.6 }, 0);
 
+    // Progressive detail: the 4k base is crisp from afar but soft up close. The first time the user
+    // zooms past the threshold, lazily fetch the 8k texture and swap it into the globe material (with
+    // max anisotropy so it stays sharp at grazing angles). Fetched once, on demand — initial load is
+    // untouched (the 8k never downloads unless someone zooms in).
+    const maybeHiRes = () => {
+      if (hiResRef.current) return;
+      const dist = typeof c.getDistance === "function" ? c.getDistance() : g.camera().position.length();
+      if (dist > 230) return;
+      hiResRef.current = true;
+      new TextureLoader().load("/textures/earth-8k.jpg", (tex) => {
+        tex.colorSpace = SRGBColorSpace;
+        try { tex.anisotropy = g.renderer().capabilities.getMaxAnisotropy(); } catch {}
+        const mat = g.globeMaterial();
+        if (mat) { mat.map = tex; mat.needsUpdate = true; }
+      });
+    };
+
     let timer;
     const spinAfterIdle = () => { clearTimeout(timer); if (!reduced) timer = setTimeout(() => { c.autoRotate = true; }, 5000); };
     const stop = () => { clearTimeout(timer); c.autoRotate = false; };
     const onStart = () => stop();
-    const onEnd = () => spinAfterIdle();
-    const onWheel = () => { stop(); spinAfterIdle(); };
+    const onEnd = () => { spinAfterIdle(); maybeHiRes(); };
+    const onWheel = () => { stop(); spinAfterIdle(); maybeHiRes(); };
     const wrap = wrapRef.current;
     c.addEventListener("start", onStart);
     c.addEventListener("end", onEnd);
@@ -106,6 +125,15 @@ export default function GlobeInner({ countries, metric, hs, lang }) {
         backgroundColor="rgba(0,0,0,0)"
         globeImageUrl="/textures/earth.jpg"
         bumpImageUrl="/textures/earth-topology.png"
+        onGlobeReady={() => {
+          const g = globeRef.current;
+          if (!g) return;
+          try {
+            const mat = g.globeMaterial();
+            const a = g.renderer().capabilities.getMaxAnisotropy();
+            if (mat && mat.map) { mat.map.anisotropy = a; mat.map.needsUpdate = true; }
+          } catch {}
+        }}
         showAtmosphere
         atmosphereColor="#7c9bff"
         atmosphereAltitude={0.2}

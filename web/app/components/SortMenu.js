@@ -14,8 +14,11 @@ export default function SortMenu({ value, onChange, t }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const btnRef = useRef(null);
-  const opts = [["signal", t.sortSignal], ["change", t.sortChange], ["value", t.sortValue], ["name", t.sortName]];
-  const cur = opts.find((o) => o[0] === value) || opts[0];
+  const opts = [
+    ["name-asc", t.sortNameAsc], ["name-desc", t.sortNameDesc],
+    ["change-desc", t.sortChangeUp], ["change-asc", t.sortChangeDown],
+    ["value-desc", t.sortValueHigh], ["value-asc", t.sortValueLow],
+  ];
 
   function toggle() {
     if (!open && btnRef.current) {
@@ -29,7 +32,7 @@ export default function SortMenu({ value, onChange, t }) {
     <div className="sortm">
       <button ref={btnRef} type="button" className="sortm-btn" onClick={toggle}
               onBlur={() => setTimeout(() => setOpen(false), 160)} aria-expanded={open}>
-        <span className="sortm-ic">⇅</span> {cur[1]}
+        <span className="sortm-ic">⇅</span> {t.sort}
       </button>
       {open && pos && createPortal(
         <ul className="sortm-menu" style={{ position: "fixed", top: pos.top, right: pos.right }}>

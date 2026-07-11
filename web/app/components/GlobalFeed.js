@@ -10,10 +10,16 @@ import Link from "next/link";
 import { bandArrow, bandLabel, fmtPct, fmtUSD, sigColor } from "../lib/format.js";
 
 export default function GlobalFeed({ feed, flow, lang, t, hs, sort = "signal", tools }) {
+  const nm = (x) => (lang === "en" ? x.name_en : x.name_vi) || "";
+  const loc = lang === "en" ? "en" : "vi";
   let items = flow === "all" ? feed : feed.filter((f) => f.flow === flow);
-  if (sort === "change") items = [...items].sort((a, b) => Math.abs(b.yoy_delta || 0) - Math.abs(a.yoy_delta || 0));
-  else if (sort === "value") items = [...items].sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0));
-  else if (sort === "name") items = [...items].sort((a, b) => ((lang === "en" ? a.name_en : a.name_vi) || "").localeCompare((lang === "en" ? b.name_en : b.name_vi) || ""));
+  items = [...items];
+  if (sort === "name-asc") items.sort((a, b) => nm(a).localeCompare(nm(b), loc));
+  else if (sort === "name-desc") items.sort((a, b) => nm(b).localeCompare(nm(a), loc));
+  else if (sort === "change-desc") items.sort((a, b) => (b.yoy_delta || 0) - (a.yoy_delta || 0));
+  else if (sort === "change-asc") items.sort((a, b) => (a.yoy_delta || 0) - (b.yoy_delta || 0));
+  else if (sort === "value-asc") items.sort((a, b) => (a.value_usd || 0) - (b.value_usd || 0));
+  else items.sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0)); // value-desc (default)
   return (
     <div className="col-fill">
       <div className="panel-h">
