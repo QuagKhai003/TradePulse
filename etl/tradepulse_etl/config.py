@@ -14,6 +14,7 @@ HS_PELLETS = ["440131"]  # pilot vertical (kept for the fixture/tests)
 
 # HS-6 -> bilingual product name (everyday words). Add a code here to cover a new category.
 PRODUCTS = {
+    "TOTAL":  {"name_en": "All products",     "name_vi": "Tất cả sản phẩm"},   # every commodity
     "440131": {"name_en": "Wood pellets",     "name_vi": "Viên nén gỗ"},
     "4407":   {"name_en": "Sawn wood",        "name_vi": "Gỗ xẻ"},   # HS-4 heading (broad group)
     "090240": {"name_en": "Black tea",        "name_vi": "Chè (trà) đen"},
@@ -21,10 +22,29 @@ PRODUCTS = {
     "030617": {"name_en": "Frozen shrimp",    "name_vi": "Tôm đông lạnh"},
     "080131": {"name_en": "Cashew (in shell)", "name_vi": "Hạt điều"},
     "100630": {"name_en": "Milled rice",      "name_vi": "Gạo"},
+    # broader set (Vietnam exports + global majors)
+    "8517":   {"name_en": "Phones & telecom", "name_vi": "Điện thoại & viễn thông"},
+    "8542":   {"name_en": "Integrated circuits", "name_vi": "Vi mạch (IC)"},
+    "6109":   {"name_en": "T-shirts",         "name_vi": "Áo thun"},
+    "6110":   {"name_en": "Knitwear",         "name_vi": "Áo len dệt kim"},
+    "6403":   {"name_en": "Leather footwear", "name_vi": "Giày da"},
+    "9403":   {"name_en": "Furniture",        "name_vi": "Đồ nội thất"},
+    "4001":   {"name_en": "Natural rubber",   "name_vi": "Cao su tự nhiên"},
+    "0904":   {"name_en": "Pepper",           "name_vi": "Hạt tiêu"},
+    "0304":   {"name_en": "Fish fillets",     "name_vi": "Phi lê cá"},
+    "0803":   {"name_en": "Bananas",          "name_vi": "Chuối"},
+    "2709":   {"name_en": "Crude oil",        "name_vi": "Dầu thô"},
+    "8703":   {"name_en": "Cars",             "name_vi": "Ô tô"},
+    "1201":   {"name_en": "Soybeans",         "name_vi": "Đậu tương"},
+    "1511":   {"name_en": "Palm oil",         "name_vi": "Dầu cọ"},
 }
 
-# The list the ETL pulls + exports a snapshot for. First = the landing default.
-COVERED_HS = ["440131", "4407", "090240", "090111", "030617", "080131", "100630"]
+# The list the ETL pulls + exports a snapshot for. First = the landing default (all products).
+COVERED_HS = list(PRODUCTS.keys())
+
+# Sourcing (quarterly partner drill-down) is heavy — only the core products get it; the rest still
+# get the map/signals + annual history.
+SOURCING_HS = ["TOTAL", "440131", "4407", "090240", "090111", "030617", "080131", "100630"]
 
 # Focus countries for the quarterly partner-sourcing drill-down (all-countries quarterly is too
 # heavy). Vietnam (exporter) + the pilot import markets. Others show annual history only.

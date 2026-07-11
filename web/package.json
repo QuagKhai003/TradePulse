@@ -12,10 +12,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "d3-geo": "3.1.1",
+    "framer-motion": "^12.42.2",
     "next": "15.5.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "d3-geo": "3.1.1",
+    "react-globe.gl": "^2.38.0",
+    "three": "^0.185.1",
     "topojson-client": "3.1.0",
     "world-atlas": "2.0.2"
   }

@@ -1,16 +1,14 @@
 /**
- * page.js — map-first landing: world signal map + export/import/all toggle + global feed (plan §7.1).
- * @context  Server component. The map is the hero: every country coloured by its export OR import
- *           signal for the selected product; a global feed lists moderate+ signals both flows; the
- *           flow toggle (?flow) and product search (?hs) reshape it. Click a country to drill in.
- * @done     Map + toggle + top-country tiles (both flows) + global feed + search; locked for uncovered HS.
- * @todo     Deeper country view + qualifications tab per flow (batch 3.4/3.5).
+ * page.js — immersive map-first landing: a real 3D signal globe hero + global feed (plan §7.1).
+ * @context  Server component. The hero is a dark, cinematic WebGL globe (GlobeHero) coloured by the
+ *           selected product+flow signal; a glass rail carries the headline, search, flow toggle,
+ *           legend and the live feed. Below the fold: top-country tiles on the light system.
+ *           Click a country (globe or feed) to drill in. Uncovered products show a locked page.
  * @limits   Inform-never-match; value/volume only.
- * @affects  Reads lib/snapshot + lib/catalog; renders WorldMap / GlobalFeed / CountryTile / SearchBox / LockedProduct.
+ * @affects  Reads lib/snapshot + lib/catalog; renders GlobeHero / GlobalFeed / CountryTile / Legend / SearchBox.
  */
-import WorldMap from "./components/WorldMap.js";
+import GlobeHero from "./components/GlobeHero.js";
 import GlobalFeed from "./components/GlobalFeed.js";
-import CountryTile from "./components/CountryTile.js";
 import SearchBox from "./components/SearchBox.js";
 import Legend from "./components/Legend.js";
 import LockedProduct from "./components/LockedProduct.js";
@@ -25,7 +23,7 @@ export default async function Page({ searchParams }) {
   const lang = sp.lang === "en" ? "en" : "vi";
   const flow = FLOWS.includes(sp.flow) ? sp.flow : "all";
   const tr = t(lang);
-  const snap = await loadSnapshot(sp.hs);       // no hs -> landing default (snapshot.json)
+  const snap = await loadSnapshot(sp.hs);
   if (!snap && !sp.hs) return <main className="page"><div className="empty">{tr.noData}</div></main>;
 
   const hs = (snap && snap.hs6) || sp.hs || "440131";
@@ -35,75 +33,77 @@ export default async function Page({ searchParams }) {
     ? (lang === "en" ? snap.product.name_en : snap.product.name_vi)
     : (lang === "en" ? entry.name_en : entry.name_vi);
   const qsl = lang === "en" ? "&lang=en" : "";
+  const langHref = `?flow=${flow}&hs=${hs}&lang=${lang === "en" ? "vi" : "en"}`;
+
+  if (!covered) {
+    return (
+      <main className="page">
+        <header className="topbar">
+          <div className="brand"><span className="logo">◈ TradePulse</span><span className="tagline">{tr.tagline}</span></div>
+          <a className="langswitch" href={langHref}>{tr.lang}</a>
+        </header>
+        <div className="searchrow"><SearchBox lang={lang} placeholder={tr.searchPlaceholder} /></div>
+        <section className="subhead">
+          <div className="chips">
+            <span className="chip">{tr.product}: <strong>{product}</strong></span>
+            <span className="chip hs">HS {hs}</span>
+          </div>
+        </section>
+        <LockedProduct product={entry} lang={lang} />
+        <footer className="disclaimer">{tr.disclaimer}</footer>
+      </main>
+    );
+  }
 
   const metric = flow === "export" ? "exp" : "imp";
-  const emphasis = flow === "export" ? "exp" : flow === "import" ? "imp" : null;
-  const flowVal = (c) => flow === "export" ? (c.exp?.value_usd || 0)
-    : flow === "import" ? (c.imp?.value_usd || 0)
-    : Math.max(c.exp?.value_usd || 0, c.imp?.value_usd || 0);
-  const top = covered ? [...snap.countries].sort((a, b) => flowVal(b) - flowVal(a)).slice(0, 12) : [];
+  const flowLabel = (f) => f === "all" ? tr.flowAll : f === "export" ? tr.flowExport : tr.flowImport;
+  const isTotal = hs === "TOTAL";
 
   return (
-    <main className="page">
-      <header className="topbar">
-        <div className="brand">
-          <span className="logo">◈ TradePulse</span>
-          <span className="tagline">{tr.tagline}</span>
-        </div>
-        <a className="langswitch" href={`?flow=${flow}&hs=${hs}&lang=${lang === "en" ? "vi" : "en"}`}>{tr.lang}</a>
-      </header>
+    <main className="home">
+      <section className="hero">
+        <div className="hero-glow" aria-hidden />
 
-      <div className="searchrow"><SearchBox lang={lang} placeholder={tr.searchPlaceholder} /></div>
+        <header className="hero-top">
+          <div className="brand"><span className="logo">◈ TradePulse</span><span className="tagline">{tr.tagline}</span></div>
+          <div className="hero-top-right">
+            {hs === "440131" && <a className="chip link on-dark" href={`/profiles${lang === "en" ? "?lang=en" : ""}`}>{tr.profilesLink}</a>}
+            {hs === "440131" && <a className="chip link on-dark" href={`/requirements${lang === "en" ? "?lang=en" : ""}`}>{tr.reqLink}</a>}
+            <a className="chip link on-dark" href={`/pricing${lang === "en" ? "?lang=en" : ""}`}>{tr.pricingLink}</a>
+            <a className="langswitch on-dark" href={langHref}>{tr.lang}</a>
+          </div>
+        </header>
 
-      {snap?.is_sample && covered && <div className="samplebar">⚠ {tr.sample}</div>}
+        <div className="hero-inner">
+          <aside className="hero-rail">
+            <h1 className="hero-title">{tr.subtitle}</h1>
+            <div className="hero-search"><SearchBox lang={lang} placeholder={tr.searchPlaceholder} /></div>
 
-      <section className="subhead">
-        <h1>{tr.subtitle}</h1>
-        <div className="chips">
-          <span className="chip">{tr.product}: <strong>{product}</strong></span>
-          <span className="chip hs">HS {hs}</span>
-          {covered && <span className="chip muted">{tr.period} {snap.latest_period}</span>}
-          {hs === "440131" && <a className="chip link" href={`/profiles${lang === "en" ? "?lang=en" : ""}`}>{tr.profilesLink}</a>}
-          {hs === "440131" && <a className="chip link" href={`/requirements${lang === "en" ? "?lang=en" : ""}`}>{tr.reqLink}</a>}
-          <a className="chip link" href={`/pricing${lang === "en" ? "?lang=en" : ""}`}>{tr.pricingLink}</a>
+            <div className="hero-controls">
+              <div className="flowbar dark">
+                {FLOWS.map((f) => (
+                  <a key={f} className={`flowbtn ${f === flow ? "on" : ""}`} href={`/?flow=${f}&hs=${hs}${qsl}`}>{flowLabel(f)}</a>
+                ))}
+              </div>
+              <span className="chip on-dark strong">{product}</span>
+              {!isTotal && <span className="chip hs">HS {hs}</span>}
+              <span className="chip on-dark muted">{snap.latest_period}</span>
+            </div>
+
+            <div className="hero-legend"><Legend lang={lang} /></div>
+
+            <div className="hero-feedwrap">
+              <GlobalFeed feed={snap.feed} flow={flow} lang={lang} t={tr} hs={hs} />
+            </div>
+            {snap.is_sample && <div className="hero-sample">⚠ {tr.sample}</div>}
+          </aside>
+
+          <div className="hero-globe">
+            <GlobeHero countries={snap.countries} metric={metric} hs={hs} lang={lang} />
+            <p className="hero-hint">{tr.clickCountry} · <span className="num">{snap.countries.length}</span> {tr.allCountries}</p>
+          </div>
         </div>
       </section>
-
-      {covered ? (
-        <>
-          <div className="flowbar">
-            {FLOWS.map((f) => (
-              <a key={f} className={`flowbtn ${f === flow ? "on" : ""}`} href={`/?flow=${f}&hs=${hs}${qsl}`}>
-                {f === "all" ? tr.flowAll : f === "export" ? tr.flowExport : tr.flowImport}
-              </a>
-            ))}
-          </div>
-
-          <section className="grid">
-            <div className="mapcol">
-              <div className="mappanel">
-                <div className="mappanel-head">
-                  <span className="mappanel-title">{tr.mapTitle} · {product} · {flow === "export" ? tr.flowExport : flow === "import" ? tr.flowImport : tr.flowAll}</span>
-                  <Legend lang={lang} />
-                </div>
-                <WorldMap countries={snap.countries} metric={metric} lang={lang} />
-              </div>
-              <p className="maphint muted">{tr.clickCountry}</p>
-              <div className="markets">
-                <h2>{tr.topCountries} · {snap.countries.length} {tr.allCountries}</h2>
-                <div className="ctiles">
-                  {top.map((c) => <CountryTile key={c.code} c={c} lang={lang} t={tr} emphasis={emphasis} hs={hs} />)}
-                </div>
-              </div>
-            </div>
-            <GlobalFeed feed={snap.feed} flow={flow} lang={lang} t={tr} hs={hs} />
-          </section>
-        </>
-      ) : (
-        <LockedProduct product={entry} lang={lang} />
-      )}
-
-      <footer className="disclaimer muted">{tr.disclaimer}</footer>
     </main>
   );
 }
