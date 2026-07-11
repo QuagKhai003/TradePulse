@@ -34,7 +34,8 @@ def main() -> None:
     now_iso = datetime.now(timezone.utc).isoformat()
     conn = connect(args.db)
 
-    n = run(get_source(args.source, period=args.period), conn)
+    source = get_source(args.source, period=args.period)
+    n = run(source, conn)
 
     prev = fetch_signals(conn)                       # state before this run (for band crossings)
     sigs = compute_signals(fetch_flows(conn), now_iso)
@@ -59,6 +60,20 @@ def main() -> None:
 
     print(f"[tradepulse] flows={count_trade_flows(conn)} (upserted {n}) signals={len(sigs)} "
           f"alerts={len(alerts)} products={len(covered)} [{' '.join(covered)}]")
+
+    # Tier 2: quarterly partner sourcing for the focus reporters (needs the Comtrade key).
+    if getattr(source, "key", None):
+        from .config import FOCUS_REPORTERS
+        from .sourcing import build_sourcing, write_sourcing
+        srcs = []
+        for hs in COVERED_HS:
+            rows = source.pull_sourcing([hs], FOCUS_REPORTERS)
+            sm = build_sourcing(rows, hs)
+            if sm:
+                write_sourcing(sm, default_path.parent / f"sourcing-{hs}.json")
+                srcs.append(f"{hs}:{len(sm)}r")
+        print(f"[tradepulse] sourcing (quarterly, {len(FOCUS_REPORTERS)} focus reporters) [{' '.join(srcs)}]")
+
     _print_rollup()
 
 

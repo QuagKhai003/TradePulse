@@ -7,7 +7,10 @@
  */
 import Link from "next/link";
 import WatchButton from "../../components/WatchButton.js";
+import PartnerTable from "../../components/PartnerTable.js";
+import SourcingChart from "../../components/SourcingChart.js";
 import { loadSnapshot } from "../../lib/snapshot.js";
+import { loadSourcing } from "../../lib/sourcing.js";
 import { t } from "../../lib/i18n.js";
 import { bandArrow, bandColor, bandLabel, fmtPct, fmtUSD } from "../../lib/format.js";
 
@@ -59,6 +62,8 @@ export default async function CountryPage({ params, searchParams }) {
   const isPellets = hs === "440131";
   const reqMarket = isPellets ? REQ_MARKET[c.code] : null;
 
+  const sourcing = (await loadSourcing(hs))?.[String(c.code)] || null;
+
   return (
     <main className="page">
       <header className="topbar">
@@ -88,6 +93,16 @@ export default async function CountryPage({ params, searchParams }) {
         <FlowPanel title={tr.exportsLabel} slot={c.exp} t={tr} />
         <FlowPanel title={tr.importsLabel} slot={c.imp} t={tr} />
       </section>
+
+      {sourcing && ["export", "import"].map((fl) => sourcing[fl] && (
+        <section key={fl} className="sourcing-sec">
+          <h2>{(fl === "export" ? tr.exportsLabel : tr.importsLabel)} · {tr.sourcingTitle} <span className="muted">(quý · quarterly)</span></h2>
+          <div className="drillgrid">
+            <div className="panel"><PartnerTable partners={sourcing[fl].partners} lang={lang} t={tr} /></div>
+            <div className="panel"><h3 className="muted small">{tr.sourcingOverTime}</h3><SourcingChart sourcing={sourcing[fl]} lang={lang} /></div>
+          </div>
+        </section>
+      ))}
 
       <footer className="disclaimer muted">{tr.disclaimer}</footer>
     </main>

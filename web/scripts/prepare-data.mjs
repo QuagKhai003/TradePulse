@@ -14,7 +14,7 @@ import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-const MAX_AGE_HOURS = 24;
+const MAX_AGE_HOURS = 24 * 7;   // trade data updates monthly; refresh weekly (the ETL is heavy)
 const force = process.argv.includes("--force");
 const SNAPSHOT = path.join(process.cwd(), "public", "data", "snapshot.json");
 const ETL_DIR = path.join(process.cwd(), "..", "etl");

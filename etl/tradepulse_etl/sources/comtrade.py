@@ -47,12 +47,30 @@ class ComtradeSource:
     PERIODS_PER_CALL = 12   # authenticated /data hard limit: "Maximum number of periods is 12"
 
     def __init__(self, key: str | None = None, months: int = 24, years: int = 6,
-                 timeout: int = 60, pause: float = 1.2):
+                 months_sourcing: int = 24, timeout: int = 60, pause: float = 1.2):
         self.key = key
         self.months = months
         self.years = years
+        self.months_sourcing = months_sourcing
         self.timeout = timeout
         self.pause = pause
+
+    # --- quarterly + all-partner data for a few focus reporters (drill-down sourcing) ---
+    def pull_sourcing(self, hs_codes: list[str], reporters: list[int]) -> list[dict]:
+        """Monthly, per reporter, ALL partners (no partnerCode) -> quarters. Needs the key."""
+        if not self.key:
+            return []
+        months = self._recent_months(self.months_sourcing)
+        monthly: list[dict] = []
+        for reporter in reporters:
+            for hs in hs_codes:
+                for chunk in _chunks(months, self.PERIODS_PER_CALL):
+                    params = {"reporterCode": reporter, "cmdCode": hs, "flowCode": "M,X",
+                              "period": ",".join(chunk)}   # no partnerCode -> all partners
+                    data = self._get(f"{DATA_MONTHLY}?{urllib.parse.urlencode(params)}", auth=True)
+                    monthly += [r for r in data if _is_total_row(r)]
+                    time.sleep(self.pause)
+        return self._to_quarters(monthly)
 
     def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int] | None) -> list[dict]:
         if self.key:

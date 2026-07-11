@@ -26,8 +26,12 @@ A qualifications tab informs per export/import choice.
   to profiles and (if covered) the qualification page. → **DONE.**
 - [ ] **3.5 — Qualifications tab per flow.** Re-anchor requirement pages to the export/import choice
   (VN-exporter framing) + a country-level qualifications entry point.
-- [ ] **3.6 — Quarterly + partner sourcing (refinement).** Restore per-country quarterly + partner
-  breakdown (needs a monthly, per-reporter pull — heavier) for the drill-down sourcing chart.
+- [x] **3.6 — Quarterly + partner sourcing.** Per-country quarterly + partner breakdown for the
+  drill-down sourcing chart. → **DONE:** two-tier data — global map stays annual (all countries too
+  heavy monthly); a **focus set** (Vietnam + JP/KR/US/UK) gets a quarterly, all-partner pull
+  (`ComtradeSource.pull_sourcing` → `sourcing.py` → `sourcing-<hs>.json`). Country page renders
+  `PartnerTable` (top partners, share, YoY) + SSR stacked-bar `SourcingChart` (quarters) per flow;
+  non-focus countries show annual history. Others addable via `config.FOCUS_REPORTERS`.
 - [x] **3.7 — Multiple product categories.** Pull each covered HS (pellets, sawn wood, tea, coffee,
   shrimp, cashew, rice) → one snapshot per product; the category switch loads real per-product maps.
   → **DONE:** `config.COVERED_HS`; ETL loops HS×year; `snapshot-<hs>.json` per product; web loader +

@@ -26,6 +26,10 @@ PRODUCTS = {
 # The list the ETL pulls + exports a snapshot for. First = the landing default.
 COVERED_HS = ["440131", "4407", "090240", "090111", "030617", "080131", "100630"]
 
+# Focus countries for the quarterly partner-sourcing drill-down (all-countries quarterly is too
+# heavy). Vietnam (exporter) + the pilot import markets. Others show annual history only.
+FOCUS_REPORTERS = [704, 392, 410, 842, 826]
+
 # --- Destination markets (plan §3): slug -> codes + bilingual names ---
 # reporter = the importing country whose customs report the flow (importer-reported default, §6.4).
 MARKETS = {

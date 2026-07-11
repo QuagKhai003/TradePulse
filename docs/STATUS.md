@@ -14,12 +14,12 @@ Data = REAL Comtrade, authenticated, **annual all-countries both flows** (quarte
 = refinement 3.6). Key in `etl/.env`.
 
 ## Active task
-**ADR-0003 — batches 3.1–3.4 + 3.7 DONE (merged to `main`).** Map-first + multi-product: global
-both-flows ETL → one snapshot per product (7 covered: pellets, sawn wood, tea, coffee, shrimp,
-cashew, rice); category switch (`?hs` / search) loads REAL per-product maps; export/import/all toggle;
-global feed both flows; `/country/[code]` drill. 22 Python tests green; build clean.
-**NEXT:** 3.5 qualifications-per-flow tab; 3.6 quarterly + partner sourcing chart.
-Note: `npm run dev` first run fetches all 7 products (~2 min, then cached 24h).
+**ADR-0003 — batches 3.1–3.4, 3.6, 3.7 DONE (merged to `main`).** Map-first + multi-product +
+quarterly sourcing: global both-flows annual map per product (7 covered); export/import/all toggle;
+global feed; `/country/[code]` drill with **quarterly partner-sourcing charts** for focus markets
+(VN/JP/KR/US/UK), annual history elsewhere. 22 Python tests green; build clean.
+**NEXT (only 3.5 left):** qualifications tab anchored to export/import choice.
+Note: full data refresh = 112 Comtrade calls (~6 min); `prepare-data` threshold = 7 days.
 
 ## How to run (ONE command)
 ```

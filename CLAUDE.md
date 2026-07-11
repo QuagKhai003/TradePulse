@@ -62,7 +62,8 @@ Offline Python tests: `cd etl && python -m unittest discover -s tests` (22).
 - **Map-first (ADR-0003):** world map (up to ~177 countries), export + import, colored by signal, with
   an export/import/all toggle + global feed (both flows) + country drill (`/country/[code]`).
   **7 product categories** (pellets, sawn wood, tea, coffee, shrimp, cashew, rice) — search/`?hs`
-  swaps to a real per-product map (`snapshot-<hs>.json`).
+  swaps to a real per-product map (`snapshot-<hs>.json`). Country drill shows **quarterly partner
+  sourcing charts** for focus markets (VN/JP/KR/US/UK), annual history elsewhere (`sourcing-<hs>.json`).
 - **Data is REAL:** Layer-1 trade (Comtrade authenticated, annual all-countries both flows) + Layer-2
   profiles + Layer-3 requirement pages (curated, official sources + verified dates). Stage 0 WTP unproven.
   Quarterly + partner sourcing = deferred refinement (3.6); requirement rules age — quarterly review (S-001).
