@@ -11,7 +11,7 @@ import { fmtPct, fmtUSD, sigColor } from "../lib/format.js";
 
 function Flow({ tag, cls, slot }) {
   if (!slot) return <span className="tcf"><i className={`tcf-tag ${cls}`}>{tag}</i><b className="tcf-val num">—</b><em /></span>;
-  const c = sigColor(slot.band, slot.direction);
+  const c = sigColor(slot.band, slot.direction, true);
   return (
     <span className="tcf">
       <i className={`tcf-tag ${cls}`}>{tag}</i>

@@ -23,7 +23,7 @@ export default function GlobalFeed({ feed, flow, lang, t, hs, sort = "signal", t
       <ul className="feed-list scrollx">
         {items.map((m, i) => {
           const name = lang === "en" ? m.name_en : m.name_vi;
-          const color = sigColor(m.band, m.direction);
+          const color = sigColor(m.band, m.direction, true);
           const flowLabel = m.flow === "export" ? t.exportsLabel : t.importsLabel;
           return (
             <li key={`${m.code}-${m.flow}-${i}`} className="feed-item">
