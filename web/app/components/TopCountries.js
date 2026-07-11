@@ -1,21 +1,22 @@
 /**
- * TopCountries.js — top-20 countries by total trade, with export + import volume + YoY% (plan §7.1).
- * @context  Ranked by (export + import) value. Each row shows both flows' value and the YoY change
- *           vs last year, colour-coded (green rising / red falling). Click to drill in.
+ * TopCountries.js — top-20 countries by total trade: export + import volume + YoY% (plan §7.1).
+ * @context  Ranked by (export + import) value. Aligned columns; XK (export) / NK (import) shown as
+ *           colour tags (green = export, indigo = import) so the flow is unmistakable. YoY colour =
+ *           green rising / red falling. Click to drill in.
  * @limits   Presentation only; value/volume only.
- * @affects  Rendered in the left panel on page.js.
+ * @affects  Rendered in the left overlay panel on page.js.
  */
 import Link from "next/link";
 import { fmtPct, fmtUSD, sigColor } from "../lib/format.js";
 
-function Cell({ label, slot }) {
-  if (!slot) return <span className="tc-cell"><i>{label}</i> <span className="muted">—</span></span>;
+function Flow({ tag, cls, slot }) {
+  if (!slot) return <span className="tcf"><i className={`tcf-tag ${cls}`}>{tag}</i><b className="tcf-val num">—</b><em /></span>;
   const c = sigColor(slot.band, slot.direction);
-  const pct = slot.yoy_delta != null ? fmtPct(slot.yoy_delta) : "";
   return (
-    <span className="tc-cell">
-      <i>{label}</i> <b className="num">{fmtUSD(slot.value_usd)}</b>
-      {pct && <em className="num" style={{ color: c }}>{pct}</em>}
+    <span className="tcf">
+      <i className={`tcf-tag ${cls}`}>{tag}</i>
+      <b className="tcf-val num">{fmtUSD(slot.value_usd)}</b>
+      <em className="tcf-pct num" style={{ color: c }}>{slot.yoy_delta != null ? fmtPct(slot.yoy_delta) : ""}</em>
     </span>
   );
 }
@@ -26,7 +27,7 @@ export default function TopCountries({ countries, lang, t, hs }) {
     .slice(0, 20);
   return (
     <div className="col-fill">
-      <div className="panel-h"><h2>{t.topCountries}</h2><span className="feed-count">20</span></div>
+      <div className="panel-h"><h2><b className="panel-n num">20</b> {t.topCountries}</h2></div>
       <ol className="tc-list scrollx">
         {rows.map((c, i) => (
           <li key={c.code} className="tc-row">
@@ -34,8 +35,8 @@ export default function TopCountries({ countries, lang, t, hs }) {
               <span className="tc-rank num">{i + 1}</span>
               <span className="tc-name">{lang === "en" ? c.name_en : c.name_vi}</span>
               <span className="tc-flows">
-                <Cell label={t.exportsShort} slot={c.exp} />
-                <Cell label={t.importsShort} slot={c.imp} />
+                <Flow tag={t.exportsShort} cls="export" slot={c.exp} />
+                <Flow tag={t.importsShort} cls="import" slot={c.imp} />
               </span>
             </Link>
           </li>

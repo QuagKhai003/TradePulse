@@ -11,6 +11,7 @@ import GlobeHero from "./components/GlobeHero.js";
 import GlobalFeed from "./components/GlobalFeed.js";
 import TopCountries from "./components/TopCountries.js";
 import SearchBox from "./components/SearchBox.js";
+import MotionPanel from "./components/MotionPanel.js";
 import LockedProduct from "./components/LockedProduct.js";
 import { loadSnapshot } from "./lib/snapshot.js";
 import { lookup } from "./lib/catalog.js";
@@ -71,36 +72,32 @@ export default async function Page({ searchParams }) {
     <main className="home">
       <section className="hero">
         <div className="hero-glow" aria-hidden />
+        <div className="hero-globe-bg"><GlobeHero countries={snap.countries} metric={metric} hs={hs} lang={lang} /></div>
 
         <header className="hero-top">
           <div className="brand"><span className="logo">◈ TradePulse</span><span className="tagline">{tr.tagline}</span></div>
           <div className="hero-search-top"><SearchBox lang={lang} placeholder={tr.searchPlaceholder} /></div>
-          <div className="hero-top-right">
-            <span className="chip on-dark strong">{product}</span>
-            {!isTotal && <span className="chip hs">HS {hs}</span>}
-            <span className="chip on-dark muted">{snap.latest_period}</span>
-            {hs === "440131" && <a className="chip link on-dark" href={`/profiles${lang === "en" ? "?lang=en" : ""}`}>{tr.profilesLink}</a>}
-            {hs === "440131" && <a className="chip link on-dark" href={`/requirements${lang === "en" ? "?lang=en" : ""}`}>{tr.reqLink}</a>}
-            <a className="chip link on-dark" href={`/pricing${lang === "en" ? "?lang=en" : ""}`}>{tr.pricingLink}</a>
-            <a className="langswitch on-dark" href={langHref}>{tr.lang}</a>
-          </div>
+          <nav className="hero-top-right">
+            <a className="authbtn ghost" href="#">{tr.login}</a>
+            <a className="authbtn primary" href="#">{tr.signup}</a>
+            <a className="langswitch on-dark" href={langHref}>{lang === "en" ? "VI" : "EN"}</a>
+          </nav>
         </header>
 
-        <div className="hero-body">
-          <aside className="glasscol">
-            <TopCountries countries={snap.countries} lang={lang} t={tr} hs={hs} />
-          </aside>
+        <MotionPanel from="left" className="panel-col left glasscol">
+          <TopCountries countries={snap.countries} lang={lang} t={tr} hs={hs} />
+        </MotionPanel>
 
-          <div className="hero-globe">
-            <GlobeHero countries={snap.countries} metric={metric} hs={hs} lang={lang} />
-            <p className="hero-hint">{tr.clickCountry} · <span className="num">{snap.countries.length}</span> {tr.allCountries}</p>
-            {snap.is_sample && <div className="hero-sample">⚠ {tr.sample}</div>}
-          </div>
+        <MotionPanel from="right" delay={0.05} className="panel-col right glasscol">
+          <GlobalFeed feed={snap.feed} flow={flow} lang={lang} t={tr} hs={hs} toggle={flowToggle} />
+        </MotionPanel>
 
-          <aside className="glasscol">
-            <GlobalFeed feed={snap.feed} flow={flow} lang={lang} t={tr} hs={hs} toggle={flowToggle} />
-          </aside>
+        <div className="hero-foot">
+          <span className="chip on-dark strong">{product}</span>
+          {!isTotal && <span className="chip hs">HS {hs}</span>}
+          <span className="foot-hint">{tr.clickCountry} · <b className="num">{snap.countries.length}</b> {tr.allCountries}</span>
         </div>
+        {snap.is_sample && <div className="hero-sample">⚠ {tr.sample}</div>}
       </section>
     </main>
   );

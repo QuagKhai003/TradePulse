@@ -14,7 +14,7 @@ export default function GlobalFeed({ feed, flow, lang, t, hs, toggle }) {
   return (
     <div className="col-fill">
       <div className="panel-h">
-        <h2>{t.feedTitle} <span className="feed-count">{items.length}</span></h2>
+        <h2><b className="panel-n num">{items.length}</b> {t.feedTitle}</h2>
         {toggle}
       </div>
       <ul className="feed-list scrollx">

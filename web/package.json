@@ -5,7 +5,7 @@
   "description": "TradePulse — Layer 1 demand map + signal feed (reads the ETL snapshot).",
   "scripts": {
     "predev": "node scripts/prepare-data.mjs",
-    "dev": "next dev -p 3200",
+    "dev": "next dev -p 3200 --turbopack",
     "data": "node scripts/prepare-data.mjs --force",
     "build": "next build",
     "start": "next start -p 3200",
