@@ -1,12 +1,11 @@
 "use client";
 /**
  * HeroClient.js — the interactive home hero (client state, no page reloads).
- * @context  Holds flow (export/import) + lang (vi/en) as client state, so toggling them updates the
- *           globe colour, feed, top-20 and labels INSTANTLY — no navigation, no globe remount. Both
- *           toggles are animated segmented pills (framer-motion sliding fill). Product change still
- *           navigates (different data) via the search box, preserving the current language.
+ * @context  Holds flow (export/import), lang (vi/en) and feed sort as client state — toggling any
+ *           updates the globe/feed/labels instantly (no navigation, no globe remount). Toggles are
+ *           animated segmented pills. Product change navigates (different data) via search, keeping lang.
  * @limits   Presentation + state; data comes pre-loaded from the server page.
- * @affects  Wraps GlobeHero / TopCountries / GlobalFeed / SearchBox / MotionPanel.
+ * @affects  Wraps GlobeHero / TopCountries / GlobalFeed / SearchBox / BrowseCountries / SortMenu.
  */
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -14,6 +13,8 @@ import GlobeHero from "./GlobeHero.js";
 import GlobalFeed from "./GlobalFeed.js";
 import TopCountries from "./TopCountries.js";
 import SearchBox from "./SearchBox.js";
+import BrowseCountries from "./BrowseCountries.js";
+import SortMenu from "./SortMenu.js";
 import MotionPanel from "./MotionPanel.js";
 import { t } from "../lib/i18n.js";
 
@@ -35,15 +36,20 @@ function Segmented({ options, value, onChange, idBase, size = "md" }) {
 export default function HeroClient({ snapshot, hs, initialLang, initialFlow }) {
   const [lang, setLang] = useState(initialLang);
   const [flow, setFlow] = useState(initialFlow);
+  const [sort, setSort] = useState("signal");
   const tr = t(lang);
   const metric = flow === "export" ? "exp" : "imp";
   const isTotal = hs === "TOTAL";
   const product = lang === "en" ? snapshot.product.name_en : snapshot.product.name_vi;
+  const updated = snapshot.generated_at
+    ? new Date(snapshot.generated_at).toLocaleDateString(lang === "en" ? "en-GB" : "vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
+    : snapshot.latest_period;
 
   const flowToggle = (
     <Segmented idBase="flow-ind" value={flow} onChange={setFlow} size="sm"
       options={[{ v: "export", label: tr.flowExport }, { v: "import", label: tr.flowImport }]} />
   );
+  const feedTools = (<><SortMenu value={sort} onChange={setSort} t={tr} />{flowToggle}</>);
 
   return (
     <main className="home">
@@ -52,8 +58,11 @@ export default function HeroClient({ snapshot, hs, initialLang, initialFlow }) {
         <div className="hero-globe-bg"><GlobeHero countries={snapshot.countries} metric={metric} hs={hs} lang={lang} /></div>
 
         <header className="hero-top">
-          <div className="brand"><span className="logo">◈ TradePulse</span><span className="tagline">{tr.tagline}</span></div>
-          <div className="hero-search-top"><SearchBox lang={lang} placeholder={tr.searchPlaceholder} /></div>
+          <div className="brand"><span className="logo">◈ TradePulse</span></div>
+          <div className="hero-search-top">
+            <SearchBox lang={lang} placeholder={tr.searchPlaceholder} />
+            <BrowseCountries countries={snapshot.countries} lang={lang} hs={hs} label={tr.browseCountries} />
+          </div>
           <nav className="hero-top-right">
             <a className="authbtn ghost" href="#">{tr.login}</a>
             <a className="authbtn primary" href="#">{tr.signup}</a>
@@ -67,13 +76,12 @@ export default function HeroClient({ snapshot, hs, initialLang, initialFlow }) {
         </MotionPanel>
 
         <MotionPanel from="right" delay={0.05} className="panel-col right glasscol">
-          <GlobalFeed feed={snapshot.feed} flow={flow} lang={lang} t={tr} hs={hs} toggle={flowToggle} />
+          <GlobalFeed feed={snapshot.feed} flow={flow} lang={lang} t={tr} hs={hs} sort={sort} tools={feedTools} />
         </MotionPanel>
 
         <div className="hero-foot">
-          <span className="chip on-dark strong">{product}</span>
-          {!isTotal && <span className="chip hs">HS {hs}</span>}
-          <span className="foot-hint">{tr.clickCountry} · <b className="num">{snapshot.countries.length}</b> {tr.allCountries}</span>
+          {!isTotal && <span className="chip on-dark strong">{product}</span>}
+          <span className="foot-hint">{tr.dataUpdated} {updated} · <b className="num">{snapshot.countries.length}</b> {tr.allCountries}</span>
         </div>
         {snapshot.is_sample && <div className="hero-sample">⚠ {tr.sample}</div>}
       </section>

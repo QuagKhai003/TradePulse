@@ -1,13 +1,14 @@
 /**
  * layout.js — root layout (plan §10.4: Vietnamese default).
- * @context  Wraps every page; loads the type system (Inter for UI incl. Vietnamese, JetBrains Mono
- *           for numerals — the terminal/data feel) + global CSS. HTML lang defaults to vi.
+ * @context  Three-role type system: Space Grotesk (display — brand + titles), Inter (UI/body, incl.
+ *           Vietnamese), JetBrains Mono (numerals). HTML lang defaults to vi.
  * @affects  All routes.
  */
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const sans = Inter({ subsets: ["latin", "latin-ext", "vietnamese"], variable: "--font-sans", display: "swap" });
+const display = Space_Grotesk({ subsets: ["latin", "latin-ext", "vietnamese"], variable: "--font-display", display: "swap", weight: ["500", "600", "700"] });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata = {
@@ -17,7 +18,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="vi" className={`${sans.variable} ${mono.variable}`}>
+    <html lang="vi" className={`${sans.variable} ${display.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );

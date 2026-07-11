@@ -9,13 +9,16 @@
 import Link from "next/link";
 import { bandArrow, bandLabel, fmtPct, fmtUSD, sigColor } from "../lib/format.js";
 
-export default function GlobalFeed({ feed, flow, lang, t, hs, toggle }) {
-  const items = flow === "all" ? feed : feed.filter((f) => f.flow === flow);
+export default function GlobalFeed({ feed, flow, lang, t, hs, sort = "signal", tools }) {
+  let items = flow === "all" ? feed : feed.filter((f) => f.flow === flow);
+  if (sort === "change") items = [...items].sort((a, b) => Math.abs(b.yoy_delta || 0) - Math.abs(a.yoy_delta || 0));
+  else if (sort === "value") items = [...items].sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0));
+  else if (sort === "name") items = [...items].sort((a, b) => ((lang === "en" ? a.name_en : a.name_vi) || "").localeCompare((lang === "en" ? b.name_en : b.name_vi) || ""));
   return (
     <div className="col-fill">
       <div className="panel-h">
         <h2><b className="panel-n num">{items.length}</b> {t.feedTitle}</h2>
-        {toggle}
+        {tools && <div className="panel-h-tools">{tools}</div>}
       </div>
       <ul className="feed-list scrollx">
         {items.map((m, i) => {
