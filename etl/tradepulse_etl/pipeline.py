@@ -63,14 +63,22 @@ def run_multi(sources: list[TradeSource], conn, *, raw_dir: Path = RAW_DIR, toda
     revisable recent window (not the whole history again)."""
     reporters = [m["reporter"] for m in config.MARKETS.values()]
     skip = frozenset(_final_stored(conn, today or date.today()))
-    all_rows: list[dict] = []
-    for source in sources:
-        # All covered products; partners=None so the source decides (authenticated = all countries).
-        raw = source.pull(config.COVERED_HS, reporters, None, skip=skip)
-        _store_raw(raw, source.name, raw_dir)
-        all_rows += transform_all(raw, source.name)
-    merged = merge_flows(all_rows)
-    return upsert_trade_flows(conn, merged)
+    raw_by: dict[str, list] = {s.name: [] for s in sources}
+    total = 0
+    # Per PRODUCT: pull every source, merge, upsert — so a slow/throttled/killed run keeps the products
+    # it already finished (partial persistence), and cells still merge correctly (a cell is within one
+    # product, so merging per product is equivalent to merging globally).
+    for hs in config.COVERED_HS:
+        rows: list[dict] = []
+        for source in sources:
+            raw = source.pull([hs], reporters, None, skip=skip)
+            raw_by[source.name] += raw
+            rows += transform_all(raw, source.name)
+        if rows:
+            total += upsert_trade_flows(conn, merge_flows(rows))
+    for name, raw in raw_by.items():
+        _store_raw(raw, name, raw_dir)
+    return total
 
 
 def _final_stored(conn, today) -> set:
