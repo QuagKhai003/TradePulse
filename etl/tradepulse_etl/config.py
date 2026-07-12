@@ -5,54 +5,30 @@ config.py — pilot-scope constants for the ETL.
 @done     HS codes, market->reporter map (VN/EN names), partner codes, flow default, noise
           floors + signal bands (plan §6).
 @todo     Add second vertical + markets when Stage 0 GO picks them.
-@limits   PURE data. No I/O, no imports beyond stdlib typing.
+@limits   Constants + the bundled product catalog (reference/products.json). Stdlib only.
 @affects  Consumed by pipeline, transform, signals, and the web snapshot export.
 """
+import json
+from pathlib import Path
 
 # --- Covered products (plan §3, §7.2). Each gets its own snapshot; the map switches per product. ---
 HS_PELLETS = ["440131"]  # pilot vertical (kept for the fixture/tests)
 
-# HS-6 -> bilingual product name (everyday words). Add a code here to cover a new category.
-PRODUCTS = {
-    "TOTAL":  {"name_en": "All products",     "name_vi": "Tất cả sản phẩm"},   # every commodity
-    # --- categories (HS-4 headings) ---
-    "0901":   {"name_en": "Coffee",           "name_vi": "Cà phê"},
-    "0902":   {"name_en": "Tea",              "name_vi": "Chè (trà)"},
-    "1006":   {"name_en": "Rice",             "name_vi": "Gạo"},
-    "0306":   {"name_en": "Crustaceans",      "name_vi": "Giáp xác (tôm, cua)"},
-    "0801":   {"name_en": "Nuts (cashew/coconut)", "name_vi": "Hạt (điều, dừa)"},
-    "4401":   {"name_en": "Wood fuel",        "name_vi": "Nhiên liệu gỗ"},
-    # --- specific products (HS-6) ---
-    "440131": {"name_en": "Wood pellets",     "name_vi": "Viên nén gỗ"},
-    "4407":   {"name_en": "Sawn wood",        "name_vi": "Gỗ xẻ"},
-    "090240": {"name_en": "Black tea",        "name_vi": "Trà đen"},
-    "090210": {"name_en": "Green tea",        "name_vi": "Trà xanh"},
-    "090111": {"name_en": "Coffee, green",    "name_vi": "Cà phê nhân"},
-    "090121": {"name_en": "Coffee, roasted",  "name_vi": "Cà phê rang"},
-    "030617": {"name_en": "Frozen shrimp",    "name_vi": "Tôm đông lạnh"},
-    "080131": {"name_en": "Cashew (in shell)", "name_vi": "Điều thô"},
-    "080132": {"name_en": "Cashew (shelled)", "name_vi": "Điều nhân"},
-    "100630": {"name_en": "Milled rice",      "name_vi": "Gạo xát"},
-    "100640": {"name_en": "Broken rice",      "name_vi": "Tấm (gạo tấm)"},
-    # broader set (Vietnam exports + global majors) — categories
-    "8517":   {"name_en": "Phones & telecom", "name_vi": "Điện thoại & viễn thông"},
-    "8542":   {"name_en": "Integrated circuits", "name_vi": "Vi mạch (IC)"},
-    "6109":   {"name_en": "T-shirts",         "name_vi": "Áo thun"},
-    "6110":   {"name_en": "Knitwear",         "name_vi": "Áo len dệt kim"},
-    "6403":   {"name_en": "Leather footwear", "name_vi": "Giày da"},
-    "9403":   {"name_en": "Furniture",        "name_vi": "Đồ nội thất"},
-    "4001":   {"name_en": "Natural rubber",   "name_vi": "Cao su tự nhiên"},
-    "0904":   {"name_en": "Pepper",           "name_vi": "Hạt tiêu"},
-    "0304":   {"name_en": "Fish fillets",     "name_vi": "Phi lê cá"},
-    "0803":   {"name_en": "Bananas",          "name_vi": "Chuối"},
-    "2709":   {"name_en": "Crude oil",        "name_vi": "Dầu thô"},
-    "8703":   {"name_en": "Cars",             "name_vi": "Ô tô"},
-    "1201":   {"name_en": "Soybeans",         "name_vi": "Đậu tương"},
-    "1511":   {"name_en": "Palm oil",         "name_vi": "Dầu cọ"},
-}
+# Product CATALOG (search/browse): TOTAL + every HS4 heading (1,229, official HS-2022 titles) + the
+# curated HS6 pilot products. Generated into reference/products.json; the curated entries keep their
+# Vietnamese names, the new HS4 headings are English-only for now (VN to come from Vietnam's HS list).
+_PRODUCTS_PATH = Path(__file__).resolve().parent / "reference" / "products.json"
+PRODUCTS: dict = json.loads(_PRODUCTS_PATH.read_text(encoding="utf-8"))
 
-# The list the ETL pulls + exports a snapshot for. First = the landing default (all products).
-COVERED_HS = list(PRODUCTS.keys())
+# CATALOG vs COVERAGE are deliberately different:
+#   PRODUCTS   = the searchable catalog (1,240: TOTAL + every HS4 heading + curated HS6).
+#   COVERED_HS = the products we actually build a snapshot for (the ETL writes one JSON per product).
+# A full snapshot averages ~310KB (country names repeated per file + 6-pt history + by_freq duplication),
+# so all 1,240 would be ~390MB of static JSON — far too heavy. Until the snapshot format is slimmed
+# (shared country names, no by_freq duplication, history moved out), coverage stays on the curated set;
+# search still lists all 1,240 and uncovered products fall through to the "not covered yet" path.
+CURATED_HS = [c for c, v in PRODUCTS.items() if c == "TOTAL" or v["name_vi"] != v["name_en"]]
+COVERED_HS = CURATED_HS
 
 # Sourcing (quarterly partner drill-down) is heavy — only the core products get it; the rest still
 # get the map/signals + annual history.

@@ -69,13 +69,27 @@ def run_multi(sources: list[TradeSource], conn, *, raw_dir: Path = RAW_DIR, toda
     reporters = [m["reporter"] for m in config.MARKETS.values()]
     skip = frozenset(_final_stored(conn, today or date.today()))
     raw_by: dict[str, list] = {s.name: [] for s in sources}
+
+    # BULK sources (a local file covering every product) are pulled ONCE for all products — re-parsing
+    # a 22M-row file per product would take hours. API sources stay per-product (that's how they fetch).
+    bulk_by_hs: dict[str, list] = {}
+    api_sources = []
+    for source in sources:
+        if getattr(source, "bulk", False):
+            raw = source.pull(config.COVERED_HS, reporters, None, skip=skip)
+            raw_by[source.name] += raw
+            for row in transform_all(raw, source.name):
+                bulk_by_hs.setdefault(row["hs6"], []).append(row)
+        else:
+            api_sources.append(source)
+
     total = 0
-    # Per PRODUCT: pull every source, merge, upsert — so a slow/throttled/killed run keeps the products
-    # it already finished (partial persistence), and cells still merge correctly (a cell is within one
-    # product, so merging per product is equivalent to merging globally).
+    # Per PRODUCT: combine the bulk rows with each API source, merge, upsert — so a slow/throttled/
+    # killed run keeps the products already finished, and cells still merge correctly (a cell lives
+    # within one product, so merging per product == merging globally).
     for hs in config.COVERED_HS:
-        rows: list[dict] = []
-        for source in sources:
+        rows: list[dict] = list(bulk_by_hs.get(hs, ()))
+        for source in api_sources:
             raw = source.pull([hs], reporters, None, skip=skip)
             raw_by[source.name] += raw
             rows += transform_all(raw, source.name)

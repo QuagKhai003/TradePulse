@@ -25,6 +25,7 @@ _YEAR_RE = re.compile(r"_Y(\d{4})_")
 
 class BaciSource:
     name = "baci"
+    bulk = True     # parse the file ONCE for ALL products (never per-product — see pipeline.run_multi)
 
     def __init__(self, baci_dir: Path | str = BACI_DIR):
         self.dir = Path(baci_dir)
