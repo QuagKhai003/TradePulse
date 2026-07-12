@@ -44,6 +44,10 @@ export function slotFor(slot, freq) {
   return (slot.by_freq && slot.by_freq[freq]) || slot;
 }
 
+// Bands that qualify for the signal feed (moderate+); 'minor'/'none' are suppressed by design.
+const FEED_BANDS = new Set(["surge", "collapse", "significant", "moderate", "new"]);
+export function isFeedSignal(band) { return FEED_BANDS.has(band); }
+
 export function fmtTons(kg) {
   if (kg == null) return null;
   const t = kg / 1000;

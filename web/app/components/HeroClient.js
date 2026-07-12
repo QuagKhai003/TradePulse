@@ -83,7 +83,7 @@ export default function HeroClient({ snapshot, hs, initialLang, initialFlow }) {
         </MotionPanel>
 
         <MotionPanel from="right" delay={0.05} className="panel-col right glasscol">
-          <GlobalFeed feed={snapshot.feed} flow={flow} lang={lang} t={tr} hs={hs} sort={sort} tools={feedTools} />
+          <GlobalFeed countries={snapshot.countries} flow={flow} freq={freq} lang={lang} t={tr} hs={hs} sort={sort} tools={feedTools} />
         </MotionPanel>
 
         <div className="hero-foot">
