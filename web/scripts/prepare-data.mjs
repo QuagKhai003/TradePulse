@@ -6,7 +6,7 @@
  *             • stale (> MAX_AGE) -> refresh in the BACKGROUND (dev starts instantly)
  *             • fresh             -> skip
  *           Never fails the dev start — a network/ETL error just leaves the existing snapshot.
- * @limits   Node script (build tooling). Spawns Python (`python -m tradepulse_etl --source comtrade`).
+ * @limits   Node script (build tooling). Spawns Python (`python -m tradepulse_etl --source comtrade,census --freq AQ`).
  * @affects  Wired via package.json "predev"; `--force` refreshes regardless of age.
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -19,7 +19,9 @@ const force = process.argv.includes("--force");
 const SNAPSHOT = path.join(process.cwd(), "public", "data", "snapshot.json");
 const ETL_DIR = path.join(process.cwd(), "..", "etl");
 const PY = process.platform === "win32" ? "python" : "python3";
-const ETL_ARGS = ["-m", "tradepulse_etl", "--source", "comtrade"];
+// Multi-source: Comtrade (global backbone, annual + monthly->quarterly) merged with US Census
+// (authoritative fresh US totals). Census cleanly skips without CENSUS_API_KEY. See docs/DATA_SOURCES.md.
+const ETL_ARGS = ["-m", "tradepulse_etl", "--source", "comtrade,census", "--freq", "AQ"];
 
 function ageHours(p) {
   return (Date.now() - statSync(p).mtimeMs) / 3_600_000;
