@@ -15,7 +15,7 @@ from pathlib import Path
 
 from .alerts import rollup_locked_clicks, signal_alerts
 from .db import DEFAULT_DB, connect, count_trade_flows, fetch_flows, fetch_signals, upsert_signals
-from .export import DEFAULT_SNAPSHOT, build_snapshot, write_snapshot
+from .export import DEFAULT_SNAPSHOT, build_snapshot, write_countries, write_snapshot
 from .pipeline import get_sources, run_multi
 from .signals import compute_signals
 
@@ -51,6 +51,7 @@ def main() -> None:
     # One snapshot per covered product; the map switches between them. Default = first covered.
     from .config import COVERED_HS
     default_path = Path(args.snapshot)
+    write_countries(conn, default_path.parent / "countries.json")   # names once, shared by all products
     covered = []
     for hs in COVERED_HS:
         snap = build_snapshot(conn, generated_at=now_iso, hs6=hs)

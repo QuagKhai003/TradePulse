@@ -28,7 +28,7 @@ PRODUCTS: dict = json.loads(_PRODUCTS_PATH.read_text(encoding="utf-8"))
 # (shared country names, no by_freq duplication, history moved out), coverage stays on the curated set;
 # search still lists all 1,240 and uncovered products fall through to the "not covered yet" path.
 CURATED_HS = [c for c, v in PRODUCTS.items() if c == "TOTAL" or v["name_vi"] != v["name_en"]]
-COVERED_HS = CURATED_HS
+COVERED_HS = list(PRODUCTS.keys())      # all 1,240 — the slim snapshot format (~48KB) makes this ship
 
 # Sourcing (quarterly partner drill-down) is heavy — only the core products get it; the rest still
 # get the map/signals + annual history.
