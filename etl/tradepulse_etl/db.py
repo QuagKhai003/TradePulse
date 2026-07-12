@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS trade_flows (
     PRIMARY KEY (reporter, partner, hs6, period, flow)
 );
 
+-- The snapshot export reads one product at a time; without this it scanned the whole table per product.
+CREATE INDEX IF NOT EXISTS ix_flows_hs6_partner ON trade_flows (hs6, partner);
+
 CREATE TABLE IF NOT EXISTS signals (
     reporter        INTEGER NOT NULL,
     hs6             TEXT    NOT NULL,
@@ -43,6 +46,8 @@ CREATE TABLE IF NOT EXISTS signals (
     computed_at     TEXT    NOT NULL,
     PRIMARY KEY (reporter, hs6, flow, period)
 );
+
+CREATE INDEX IF NOT EXISTS ix_signals_hs6 ON signals (hs6);
 """
 
 

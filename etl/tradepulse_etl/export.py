@@ -29,7 +29,7 @@ def _name_vi(code: int) -> str:
 
 
 def build_snapshot(conn, generated_at: str, hs6: str = "440131") -> dict:
-    flows = [r for r in _flows(conn) if r["hs6"] == hs6 and r["partner"] == config.PARTNER_WORLD]
+    flows = _flows(conn, hs6)
     signals = {(s["reporter"], s["flow"], s["period"]): s for s in _signals(conn, hs6)}
     latest = max((r["period"] for r in flows), default=None)
     sources = {r["source"] for r in flows}
@@ -114,9 +114,11 @@ def _direction(yoy: float) -> str:
     return "up" if (yoy or 0) >= 0 else "down"
 
 
-def _flows(conn):
-    from .db import fetch_flows
-    return fetch_flows(conn)
+def _flows(conn, hs6: str):
+    """Only this product's World rows — an INDEXED query. (Reading the whole table per product turned
+    1,240 exports into ~1e9 row reads.)"""
+    sql = "SELECT * FROM trade_flows WHERE hs6 = ? AND partner = ?"
+    return [dict(r) for r in conn.execute(sql, (hs6, config.PARTNER_WORLD)).fetchall()]
 
 
 def _signals(conn, hs6):
