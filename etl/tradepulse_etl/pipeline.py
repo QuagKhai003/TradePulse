@@ -16,7 +16,7 @@ from pathlib import Path
 from . import config
 from .db import upsert_trade_flows
 from .merge import merge_flows
-from .sources import ComtradeSource, FixtureSource, TradeSource, USCensusSource
+from .sources import ComtradeSource, EurostatSource, FixtureSource, TradeSource, USCensusSource
 from .transform import transform_all
 
 RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
@@ -34,7 +34,9 @@ def get_source(kind: str, period: str | None = None, freqs: tuple[str, ...] = ("
     if kind == "census":
         from .settings import census_key
         return USCensusSource(key=census_key())
-    raise ValueError(f"unknown source: {kind!r} (use 'fixture', 'comtrade' or 'census')")
+    if kind == "eurostat":
+        return EurostatSource()          # keyless (EU); EUR->USD via ECB FX
+    raise ValueError(f"unknown source: {kind!r} (use fixture|comtrade|census|eurostat)")
 
 
 def get_sources(kinds: list[str], freqs: tuple[str, ...] = ("A",)) -> list[TradeSource]:

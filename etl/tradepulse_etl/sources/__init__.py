@@ -6,6 +6,7 @@ sources — the trade-data source seam (base) + its impls (fixture, comtrade, ce
 from .base import TradeSource
 from .census import USCensusSource
 from .comtrade import ComtradeSource
+from .eurostat import EurostatSource
 from .fixture import FixtureSource
 
-__all__ = ["TradeSource", "FixtureSource", "ComtradeSource", "USCensusSource"]
+__all__ = ["TradeSource", "FixtureSource", "ComtradeSource", "USCensusSource", "EurostatSource"]
