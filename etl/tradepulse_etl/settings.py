@@ -28,3 +28,9 @@ def load_env() -> None:
 def comtrade_key() -> str | None:
     load_env()
     return os.environ.get("COMTRADE_SUBSCRIPTION_KEY") or None
+
+
+def census_key() -> str | None:
+    """US Census API key (free, api.census.gov/data/key_signup.html) — CENSUS_API_KEY in etl/.env."""
+    load_env()
+    return os.environ.get("CENSUS_API_KEY") or None

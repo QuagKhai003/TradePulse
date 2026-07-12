@@ -99,3 +99,33 @@ NEW_LANE_MIN = 5_000_000       # base ~ 0 and now >= $5M => new trade lane
 BAND_MODERATE = 0.15
 BAND_SIGNIFICANT = 0.30
 BAND_SURGE = 0.60
+
+# --- Multi-source merge (docs/DATA_SOURCES.md). One number per cell; never sum two sources. ---
+# A source is the AUTHORITY for the reporters it natively reports (each country owns its own customs
+# data). Comtrade is authority for NO ONE → it's the global fallback everyone else outranks.
+SOURCE_AUTHORITY = {
+    "census":   {842},          # US Census Bureau — US only
+    "eurostat": {m["reporter"] for m in MARKETS.values() if m.get("reporter") == 97},  # EU (add members later)
+    "hmrc":     {826},          # UK HMRC
+    "estat":    {392},          # Japan e-Stat
+    "kcs":      {410},          # Korea Customs
+}
+# Final tiebreak when authority + freshness are equal: LOWER rank wins. National primaries beat
+# Comtrade; the offline fixture always loses to any real source.
+SOURCE_PRIORITY = {
+    "census": 10, "eurostat": 10, "hmrc": 10, "estat": 10, "kcs": 10,
+    "comtrade": 50,
+    "fixture": 99,
+}
+SOURCE_PRIORITY_DEFAULT = 90    # an unknown source ranks just above the fixture
+
+
+def freq_of(period: str) -> str:
+    """Grain label from the period string: 'A' annual (YYYY), 'Q' quarterly (YYYY-Qn), 'M' monthly
+    (YYYYMM). Lets the UI offer a monthly/quarterly/annual toggle without a separate dimension."""
+    p = str(period)
+    if "-Q" in p:
+        return "Q"
+    if len(p) == 6 and p.isdigit():
+        return "M"
+    return "A"

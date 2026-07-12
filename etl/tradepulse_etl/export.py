@@ -53,6 +53,8 @@ def build_snapshot(conn, generated_at: str, hs6: str = "440131") -> dict:
             yoy = sig["yoy_delta"] if sig else None
             direction = (_direction(yoy) if sig and band != "new" else None)
             entry[slot] = {"value_usd": cur["value_usd"], "period": cur["period"],
+                           "freq": cur.get("freq"), "source": cur.get("source"),
+                           "published_date": cur.get("published_date"),
                            "yoy_delta": yoy, "band": band, "direction": direction,
                            "history": [{"period": r["period"], "value_usd": r["value_usd"]} for r in series]}
             if band in BAND_RANK:

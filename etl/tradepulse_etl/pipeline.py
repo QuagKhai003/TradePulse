@@ -14,7 +14,8 @@ from pathlib import Path
 
 from . import config
 from .db import upsert_trade_flows
-from .sources import ComtradeSource, FixtureSource, TradeSource
+from .merge import merge_flows
+from .sources import ComtradeSource, FixtureSource, TradeSource, USCensusSource
 from .transform import transform_all
 
 RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
@@ -28,7 +29,14 @@ def get_source(kind: str, period: str | None = None) -> TradeSource:
         key = comtrade_key()
         print(f"[comtrade] mode={'authenticated monthly+partners' if key else 'keyless annual World-only'}")
         return ComtradeSource(key=key)
-    raise ValueError(f"unknown source: {kind!r} (use 'fixture' or 'comtrade')")
+    if kind == "census":
+        from .settings import census_key
+        return USCensusSource(key=census_key())
+    raise ValueError(f"unknown source: {kind!r} (use 'fixture', 'comtrade' or 'census')")
+
+
+def get_sources(kinds: list[str]) -> list[TradeSource]:
+    return [get_source(k.strip()) for k in kinds if k.strip()]
 
 
 def _store_raw(records: list[dict], source_name: str, raw_dir: Path) -> Path:
@@ -40,9 +48,19 @@ def _store_raw(records: list[dict], source_name: str, raw_dir: Path) -> Path:
 
 
 def run(source: TradeSource, conn, *, raw_dir: Path = RAW_DIR) -> int:
+    """Single source: pull -> store raw -> transform -> merge -> upsert."""
+    return run_multi([source], conn, raw_dir=raw_dir)
+
+
+def run_multi(sources: list[TradeSource], conn, *, raw_dir: Path = RAW_DIR) -> int:
+    """Pull every source, transform each (tagged with its own name), then MERGE to one row per cell
+    (national authority > freshness > priority — see merge.py) before the upsert. Never sums sources."""
     reporters = [m["reporter"] for m in config.MARKETS.values()]
-    # All covered products; partners=None so the source decides (authenticated = all countries).
-    raw = source.pull(config.COVERED_HS, reporters, None)
-    _store_raw(raw, source.name, raw_dir)
-    rows = transform_all(raw, source.name)
-    return upsert_trade_flows(conn, rows)
+    all_rows: list[dict] = []
+    for source in sources:
+        # All covered products; partners=None so the source decides (authenticated = all countries).
+        raw = source.pull(config.COVERED_HS, reporters, None)
+        _store_raw(raw, source.name, raw_dir)
+        all_rows += transform_all(raw, source.name)
+    merged = merge_flows(all_rows)
+    return upsert_trade_flows(conn, merged)
