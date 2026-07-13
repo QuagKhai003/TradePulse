@@ -192,6 +192,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 @media (max-width: 820px) { .drillgrid { grid-template-columns: 1fr; } }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow-sm); }
 .panel + .panel, .sourcing-sec, .qual { margin-top: 16px; }
+/* ...but side-by-side panels are COLUMNS, not stacked cards: the +margin was pushing the second one
+   16px down, so exports/imports never lined up. Equal height too, so the pair reads as one row. */
+.drillgrid > .panel + .panel { margin-top: 0; }
+.drillgrid { align-items: stretch; }
+.drillgrid > .panel { display: flex; flex-direction: column; }
+.tender-sec { margin-top: 16px; }
+.tender-sec > h2 { margin: 0 0 10px; font-size: 15px; }
 .panel h3 { margin: 0 0 8px; font-size: 13px; font-weight: 650; text-transform: none; letter-spacing: normal; color: var(--muted); }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
 

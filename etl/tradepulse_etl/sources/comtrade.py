@@ -52,6 +52,12 @@ class ComtradeSource:
 
     PERIODS_PER_CALL = 12   # authenticated /data hard limit: "Maximum number of periods is 12"
     MONTHLY_ALL_CHUNK = 1   # all-reporters monthly is heavy -> ONE month per call (12 -> timeout)
+    # cmdCode takes a COMMA-SEPARATED list, so one call can cover many products. That is what makes a
+    # 1,240-product refresh possible at all on a free key (~500 calls/day): 1 call per 10 products per
+    # year instead of 1 per product per year. The API truncates a response at ROW_CAP rows, so a batch
+    # that comes back at the cap is re-fetched in halves (silent truncation would drop whole countries).
+    CODES_PER_CALL = 10
+    ROW_CAP = 100_000
 
     def __init__(self, key: str | None = None, months: int = 24, years: int = 6,
                  months_sourcing: int = 24, timeout: int = 60, pause: float = 1.2,
@@ -98,15 +104,21 @@ class ComtradeSource:
         # One annual call per (HS, year) returns every country, both flows (X+M). Skip (hs, year) pairs
         # already stored + final — that's the incremental win (a re-run only fetches the recent years).
         rows: list[dict] = []
-        for hs in hs_codes:
-            for year in self._recent_years(self.years):
-                if (hs, str(year)) in skip:
-                    continue
-                params = {"cmdCode": hs, "flowCode": "M,X", "partnerCode": "0", "period": year}
-                data = self._get(f"{DATA_ANNUAL}?{urllib.parse.urlencode(params)}", auth=True)
-                rows += [r for r in data if _is_total_row(r)]
-                time.sleep(self.pause)
+        for year in self._recent_years(self.years):
+            todo = [hs for hs in hs_codes if (hs, str(year)) not in skip]
+            for chunk in _chunks(todo, self.CODES_PER_CALL):
+                rows += self._annual_batch(chunk, year)
         return self._normalise_annual(rows)
+
+    def _annual_batch(self, codes: list[str], year: int) -> list[dict]:
+        """One call for many products; halve and retry if the row cap truncated the response."""
+        params = {"cmdCode": ",".join(codes), "flowCode": "M,X", "partnerCode": "0", "period": year}
+        data = self._get(f"{DATA_ANNUAL}?{urllib.parse.urlencode(params)}", auth=True)
+        time.sleep(self.pause)
+        if len(data) >= self.ROW_CAP and len(codes) > 1:
+            mid = len(codes) // 2
+            return self._annual_batch(codes[:mid], year) + self._annual_batch(codes[mid:], year)
+        return [r for r in data if _is_total_row(r)]
 
     # --- authenticated: per HS, ALL reporters, World partner, BOTH flows; MONTHLY -> QUARTERS ---
     def _pull_quarterly(self, hs_codes: list[str], skip: frozenset = frozenset()) -> list[dict]:

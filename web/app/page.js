@@ -11,11 +11,11 @@ import LockedProduct from "./components/LockedProduct.js";
 import { loadSnapshot } from "./lib/snapshot.js";
 import { loadTenders } from "./lib/tenders.js";
 import { lookup } from "./lib/catalog.js";
-import { t } from "./lib/i18n.js";
+import { resolveLang, t, VI_ENABLED } from "./lib/i18n.js";
 
 export default async function Page({ searchParams }) {
   const sp = searchParams ? await searchParams : {};
-  const lang = sp.lang === "en" ? "en" : "vi";
+  const lang = resolveLang(sp.lang);
   const flow = ["export", "import"].includes(sp.flow) ? sp.flow : "import";
   const tr = t(lang);
   const snap = await loadSnapshot(sp.hs);
@@ -37,7 +37,7 @@ export default async function Page({ searchParams }) {
     <main className="page">
       <header className="topbar">
         <div className="brand"><span className="logo">◈ TradePulse</span><span className="tagline">{tr.tagline}</span></div>
-        <a className="langswitch" href={langHref}>{tr.lang}</a>
+        {VI_ENABLED && <a className="langswitch" href={langHref}>{tr.lang}</a>}
       </header>
       <div className="searchrow"><SearchBox lang={lang} placeholder={tr.searchPlaceholder} /></div>
       <section className="subhead">

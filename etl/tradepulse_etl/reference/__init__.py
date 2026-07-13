@@ -15,3 +15,8 @@ def country_name(code) -> str:
 
 def country_iso3(code) -> str | None:
     return (_COUNTRIES.get(str(code)) or {}).get("iso3")
+
+
+def m49_by_iso3() -> dict[str, int]:
+    """ISO3 -> numeric M49. TED gives a buyer's country as ISO3; our flows key countries by M49."""
+    return {v["iso3"]: int(k) for k, v in _COUNTRIES.items() if v.get("iso3") and k.isdigit()}

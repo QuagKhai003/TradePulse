@@ -11,9 +11,11 @@ import WatchButton from "../../components/WatchButton.js";
 import PartnerTable from "../../components/PartnerTable.js";
 import SourcingChart from "../../components/SourcingChart.js";
 import QualPanel from "../../components/QualPanel.js";
+import TenderList from "../../components/TenderList.js";
 import { loadSnapshot } from "../../lib/snapshot.js";
 import { loadSourcing } from "../../lib/sourcing.js";
-import { t } from "../../lib/i18n.js";
+import { loadTenders } from "../../lib/tenders.js";
+import { resolveLang, t, VI_ENABLED } from "../../lib/i18n.js";
 import { bandArrow, bandColor, bandLabel, fmtPct, fmtPeriod, fmtUSD } from "../../lib/format.js";
 
 function FlowPanel({ title, slot, t: tr, lang }) {
@@ -28,18 +30,18 @@ function FlowPanel({ title, slot, t: tr, lang }) {
       <div className="bigval">{fmtUSD(slot.value_usd)}</div>
       <div className="bigmeta">
         {hasSig
-          ? <span className="cband" style={{ color }}>{bandArrow(slot.band, slot.direction)} {bandLabel(slot.band, "vi")} · {fmtPct(slot.yoy_delta)}</span>
+          ? <span className="cband" style={{ color }}>{bandArrow(slot.band, slot.direction)} {bandLabel(slot.band, lang)} · {fmtPct(slot.yoy_delta)}</span>
           : <span className="muted">{tr.noSignal}</span>}
         <span className="muted"> · {fmtPeriod(slot.period, lang)}</span>
       </div>
-      <div className="spark">
+      {hist.length > 1 && <div className="spark">
         {hist.map((h) => (
           <div key={h.period} className="spark-bar" title={`${h.period}: ${fmtUSD(h.value_usd)}`}>
             <div style={{ height: `${Math.round((h.value_usd / max) * 100)}%`, background: color }} />
             <span className="spark-x muted">{h.period.replace("-", " ")}</span>
           </div>
         ))}
-      </div>
+      </div>}
     </div>
   );
 }
@@ -47,7 +49,7 @@ function FlowPanel({ title, slot, t: tr, lang }) {
 export default async function CountryPage({ params, searchParams }) {
   const { code } = await params;
   const sp = searchParams ? await searchParams : {};
-  const lang = sp.lang === "en" ? "en" : "vi";
+  const lang = resolveLang(sp.lang);
   const tr = t(lang);
   const snap = await loadSnapshot(sp.hs);
   const hs = (snap && snap.hs6) || sp.hs || "440131";
@@ -64,7 +66,7 @@ export default async function CountryPage({ params, searchParams }) {
         <header className="topbar">
           <div className="brand"><Link className="logo" href={backHome}>◈ TradePulse</Link></div>
           <div className="country-search"><SearchBox lang={lang} placeholder={tr.searchHere} countryCode={code} /></div>
-          <a className="langswitch" href={`?lang=${lang === "en" ? "vi" : "en"}`}>{tr.lang}</a>
+          {VI_ENABLED && <a className="langswitch" href={`?lang=${lang === "en" ? "vi" : "en"}`}>{tr.lang}</a>}
         </header>
         <Link className="back" href={backHome}>{tr.backMap}</Link>
         <div className="empty">{tr.noCountryProduct} <b>{prod}</b>.</div>
@@ -77,6 +79,11 @@ export default async function CountryPage({ params, searchParams }) {
   const product = lang === "en" ? snap.product.name_en : snap.product.name_vi;
   const isPellets = hs === "440131";
   const sourcing = (await loadSourcing(hs))?.[String(c.code)] || null;
+  // Tenders THIS country's public buyers have open for THIS product (EU TED; buyer_code is M49).
+  const tenders = (await loadTenders(hs)).filter((x) => String(x.buyer_code) === String(c.code));
+  // The country's OWN latest period — not the snapshot-wide max, which reads as a lie next to figures
+  // from an earlier year (the map's newest country can be a year ahead of this one).
+  const asOf = [c.exp?.period, c.imp?.period].filter(Boolean).sort().pop() || snap.latest_period;
 
   return (
     <main className="page">
@@ -84,7 +91,7 @@ export default async function CountryPage({ params, searchParams }) {
         <div className="brand"><Link className="logo" href={backHome}>◈ TradePulse</Link></div>
         {/* Switch product WITHOUT going back to the globe — stays on this country. */}
         <div className="country-search"><SearchBox lang={lang} placeholder={tr.searchHere} countryCode={c.code} /></div>
-        <a className="langswitch" href={`?lang=${lang === "en" ? "vi" : "en"}`}>{tr.lang}</a>
+        {VI_ENABLED && <a className="langswitch" href={`?lang=${lang === "en" ? "vi" : "en"}`}>{tr.lang}</a>}
       </header>
 
       <Link className="back" href={backHome}>{tr.backMap}</Link>
@@ -95,7 +102,7 @@ export default async function CountryPage({ params, searchParams }) {
         <h1>{name} · {product}</h1>
         <div className="chips">
           <span className="chip hs">HS {snap.hs6}</span>
-          <span className="chip muted">{tr.period} {snap.latest_period}</span>
+          <span className="chip muted">{tr.asOf} {fmtPeriod(asOf, lang)}</span>
         </div>
         <div className="actions">
           <WatchButton watchKey={`signal:${snap.hs6}:${c.code}`} meta={{ hs6: snap.hs6, market: String(c.code), kind: "signal" }}
@@ -109,11 +116,18 @@ export default async function CountryPage({ params, searchParams }) {
         <FlowPanel title={tr.importsLabel} slot={c.imp} t={tr} lang={lang} />
       </section>
 
+      {tenders.length > 0 && (
+        <section className="panel tender-sec">
+          <h2>{tr.tendersHere} <span className="muted">({tenders.length})</span></h2>
+          <TenderList tenders={tenders} lang={lang} t={tr} />
+        </section>
+      )}
+
       <QualPanel hs={hs} code={c.code} product={product} country={name} lang={lang} t={tr} />
 
       {sourcing && ["export", "import"].map((fl) => sourcing[fl] && (
         <section key={fl} className="sourcing-sec">
-          <h2>{(fl === "export" ? tr.exportsLabel : tr.importsLabel)} · {tr.sourcingTitle} <span className="muted">(quý · quarterly)</span></h2>
+          <h2>{(fl === "export" ? tr.exportsLabel : tr.importsLabel)} · {tr.sourcingTitle} <span className="muted">(quarterly)</span></h2>
           <div className="drillgrid">
             <div className="panel"><PartnerTable partners={sourcing[fl].partners} lang={lang} t={tr} /></div>
             <div className="panel"><h3 className="muted small">{tr.sourcingOverTime}</h3><SourcingChart sourcing={sourcing[fl]} lang={lang} /></div>

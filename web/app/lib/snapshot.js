@@ -21,16 +21,21 @@ async function readJson(file) {
   }
 }
 
-// Expand a short-key slot {v,p,f,y,b,d,bf} back to the shape components render. The map snapshot
-// carries no history (dropped so 1,240 products fit) — sparklines get an empty list and skip it.
-function hydrateSlot(s) {
+// Expand a short-key slot {v,p,f,y,b,d,h,bf} back to the shape components render. `h` is bare values
+// aligned to the snapshot's shared periods index for that grain (a null = this country reported
+// nothing that period, so the point is skipped rather than sliding the series left).
+function hydrateSlot(s, periods = {}) {
   if (!s) return null;
+  const index = periods[s.f || "A"] || [];
   const out = {
     value_usd: s.v, period: s.p, freq: s.f,
     yoy_delta: s.y ?? null, band: s.b, direction: s.d ?? null,
-    history: [],
+    history: (s.h || []).map((v, i) => (v == null ? null : { period: index[i], value_usd: v }))
+                        .filter((x) => x && x.period),
   };
-  if (s.bf) out.by_freq = Object.fromEntries(Object.entries(s.bf).map(([f, x]) => [f, hydrateSlot(x)]));
+  if (s.bf) {
+    out.by_freq = Object.fromEntries(Object.entries(s.bf).map(([f, x]) => [f, hydrateSlot(x, periods)]));
+  }
   return out;
 }
 
@@ -45,8 +50,8 @@ export async function loadSnapshot(hs) {
     code: c.c,
     name_en: nm(c.c).name_en ?? String(c.c),
     name_vi: nm(c.c).name_vi ?? String(c.c),
-    exp: hydrateSlot(c.e),
-    imp: hydrateSlot(c.i),
+    exp: hydrateSlot(c.e, snap.periods),
+    imp: hydrateSlot(c.i, snap.periods),
   }));
   snap.feed = [];   // the feed is derived from countries at the chosen grain (GlobalFeed)
   return snap;

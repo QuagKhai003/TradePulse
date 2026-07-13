@@ -85,7 +85,14 @@ def _migrate(conn: sqlite3.Connection) -> None:
     cols = {r[1] for r in conn.execute("PRAGMA table_info(trade_flows)")}
     if "freq" not in cols:
         conn.execute("ALTER TABLE trade_flows ADD COLUMN freq TEXT")
-        conn.commit()
+    # Rows written before the column existed carry freq=NULL — derive it from the period so the UI's
+    # grain toggle sees them (annual 'YYYY', quarterly 'YYYY-Qn', monthly 'YYYYMM').
+    conn.execute("""UPDATE trade_flows SET freq = CASE
+                      WHEN length(period) = 4 THEN 'A'
+                      WHEN period LIKE '%-Q%' THEN 'Q'
+                      ELSE 'M' END
+                    WHERE freq IS NULL""")
+    conn.commit()
 
 
 def upsert_trade_flows(conn: sqlite3.Connection, rows: list[dict]) -> int:

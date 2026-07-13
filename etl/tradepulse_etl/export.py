@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 from . import config
-from .reference import country_name
+from .reference import country_name, m49_by_iso3
 
 BAND_RANK = {"surge": 0, "collapse": 0, "significant": 1, "moderate": 2, "new": 3}
 FEED_CAP = 60
@@ -28,11 +28,24 @@ def _name_vi(code: int) -> str:
     return _VI.get(code) or country_name(code)
 
 
+HISTORY_POINTS = 6      # sparkline length; the shared index below makes each point ~6 bytes
+
+
+def _period_index(flows: list[dict]) -> dict[str, list[str]]:
+    """Per grain, the last HISTORY_POINTS periods present — ONE list for the whole file. Slots then
+    ship history as bare values aligned to it, instead of repeating period strings 400x per file."""
+    by_fq: dict[str, set] = {}
+    for r in flows:
+        by_fq.setdefault(r.get("freq") or "A", set()).add(r["period"])
+    return {fq: sorted(ps)[-HISTORY_POINTS:] for fq, ps in by_fq.items()}
+
+
 def build_snapshot(conn, generated_at: str, hs6: str = "440131") -> dict:
     flows = _flows(conn, hs6)
     signals = {(s["reporter"], s["flow"], s["period"]): s for s in _signals(conn, hs6)}
     latest = max((r["period"] for r in flows), default=None)
     sources = {r["source"] for r in flows}
+    periods = _period_index(flows)
 
     # reporter -> {flow -> sorted series}
     by_rep: dict[int, dict[str, list]] = {}
@@ -57,7 +70,8 @@ def build_snapshot(conn, generated_at: str, hs6: str = "440131") -> dict:
             for fq, rws in by_fq.items():
                 series = sorted(rws, key=lambda r: r["period"])
                 cur = series[-1]
-                per_freq[fq] = _slot(cur, signals.get((code, flow, cur["period"])), series)
+                per_freq[fq] = _slot(cur, signals.get((code, flow, cur["period"])), series,
+                                     periods.get(fq, []))
             default_fq = "A" if "A" in per_freq else sorted(per_freq)[0]
             d = per_freq[default_fq]
             # `bf` holds ONLY the non-default grains — never a copy of the default (that duplication
@@ -74,7 +88,7 @@ def build_snapshot(conn, generated_at: str, hs6: str = "440131") -> dict:
     return {
         "generated_at": generated_at, "hs6": hs6, "product": product,
         "latest_period": latest, "is_sample": ("fixture" in sources), "sources": sorted(sources),
-        "countries": countries,
+        "periods": periods, "countries": countries,
     }
 
 
@@ -88,10 +102,24 @@ def build_tenders(conn, hs6: str, today: str) -> list[dict]:
     for r in rows:
         if r["deadline"] and r["deadline"] < today:
             continue
-        out.append({"id": r["id"], "title": r["title"], "buyer": r["buyer"],
-                    "buyer_country": r["buyer_country"], "deadline": r["deadline"],
-                    "published": r["published"], "url": r["url"]})
+        out.append({"id": r["id"], "title": _subject(r["title"]), "buyer": r["buyer"],
+                    "buyer_country": r["buyer_country"], "buyer_code": _m49(r["buyer_country"]),
+                    "deadline": r["deadline"], "published": r["published"], "url": r["url"]})
     return out
+
+
+# TED titles read "Country – English subject – LOCAL PROJECT NAME" (the tail stays in the buyer's own
+# language). We display the English subject only; the full local title is one click away on TED.
+def _subject(title: str) -> str:
+    parts = [p.strip() for p in (title or "").split("–")]
+    return parts[1] if len(parts) >= 3 and parts[1] else (title or "")
+
+
+_M49_BY_ISO3 = m49_by_iso3()
+
+
+def _m49(iso3: str | None) -> int | None:
+    return _M49_BY_ISO3.get((iso3 or "").upper())
 
 
 def write_tenders(tenders: list[dict], path: Path | str) -> Path:
@@ -119,18 +147,18 @@ def write_snapshot(snapshot: dict, path: Path | str = DEFAULT_SNAPSHOT) -> Path:
     return path
 
 
-def _slot(cur: dict, sig: dict | None, series: list) -> dict:
-    """One grain's display slot. SLIM: history is bare values (`h`) aligned to the snapshot-level
-    `periods[freq]` list, and country names live in the shared countries.json — the web loader
-    rehydrates both, so components see the same shape. Keeps 1,240 products shippable."""
+def _slot(cur: dict, sig: dict | None, series: list, index: list[str]) -> dict:
+    """One grain's display slot, SHORT keys (the web loader expands them back, so components are
+    unchanged). History is bare values aligned to the snapshot's shared `periods[freq]` index — a
+    country with no figure for an indexed period gets null there. Keeps 1,240 products shippable."""
     band = sig["band"] if sig else "none"
     yoy = sig["yoy_delta"] if sig else None
     direction = _direction(yoy) if sig and band != "new" else None
-    # Only what the MAP renders, with SHORT keys (the loader expands them back, so components are
-    # unchanged). No history (the 6-pt series was the biggest cost x 226 countries x 2 flows x 1,240
-    # files) and no source/published_date (never displayed — the freshness stamp uses `period`).
+    vals = {r["period"]: round(r["value_usd"]) for r in series}
+    hist = [vals.get(p) for p in index]
     return {"v": round(cur["value_usd"]), "p": cur["period"], "f": cur.get("freq"),
-            "y": (round(yoy, 4) if yoy is not None else None), "b": band, "d": direction}
+            "y": (round(yoy, 4) if yoy is not None else None), "b": band, "d": direction,
+            **({"h": hist} if any(v is not None for v in hist) else {})}
 
 
 def _direction(yoy: float) -> str:

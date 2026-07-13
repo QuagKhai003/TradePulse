@@ -16,7 +16,7 @@ import SearchBox from "./SearchBox.js";
 import BrowseCountries from "./BrowseCountries.js";
 import SortMenu from "./SortMenu.js";
 import MotionPanel from "./MotionPanel.js";
-import { t } from "../lib/i18n.js";
+import { t, VI_ENABLED } from "../lib/i18n.js";
 
 // Segmented pill with a CSS-transitioned sliding fill (no motion lib). Options are equal-width, so the
 // indicator just translates to the active index.
@@ -83,8 +83,10 @@ export default function HeroClient({ snapshot, tenders = [], hs, initialLang, in
           <nav className="hero-top-right">
             <a className="authbtn ghost" href="#">{tr.login}</a>
             <a className="authbtn primary" href="#">{tr.signup}</a>
-            <Segmented idBase="lang-ind" value={lang} onChange={setLang}
-              options={[{ v: "vi", label: "VI" }, { v: "en", label: "EN" }]} />
+            {VI_ENABLED && (
+              <Segmented idBase="lang-ind" value={lang} onChange={setLang}
+                options={[{ v: "vi", label: "VI" }, { v: "en", label: "EN" }]} />
+            )}
           </nav>
         </header>
 

@@ -76,3 +76,37 @@ class AnnualPeriodTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BatchAnnualTest(unittest.TestCase):
+    """cmdCode batching: many products per call, with a split when the row cap truncates."""
+
+    def _src(self, responses):
+        src = ComtradeSource(key="k", years=1, pause=0)
+        self.calls = []
+
+        def fake_get(url, auth):           # record the cmdCode of every call
+            import urllib.parse as up
+            q = up.parse_qs(up.urlparse(url).query)
+            codes = q["cmdCode"][0].split(",")
+            self.calls.append(codes)
+            return responses(codes)
+
+        src._get = fake_get
+        return src
+
+    def test_batches_products_into_one_call(self):
+        src = self._src(lambda codes: [])
+        src.CODES_PER_CALL = 10
+        src._pull_annual([f"{i:04d}" for i in range(25)])
+        self.assertEqual([len(c) for c in self.calls], [10, 10, 5])
+
+    def test_splits_when_row_cap_truncates(self):
+        def responses(codes):              # a 4-code call comes back at the cap -> must halve
+            n = src.ROW_CAP if len(codes) > 2 else 3
+            return [{"reporterCode": 704, "partnerCode": 0, "cmdCode": codes[0], "period": "2025",
+                     "flowCode": "X", "primaryValue": 1.0, "netWgt": 1.0}] * n
+        src = self._src(responses)
+        src.CODES_PER_CALL = 4
+        src._pull_annual(["0101", "0102", "0103", "0104"])
+        self.assertEqual([len(c) for c in self.calls], [4, 2, 2])   # capped -> split in halves

@@ -9,11 +9,11 @@ import Link from "next/link";
 import CompanyCard from "../components/CompanyCard.js";
 import { loadCompanies, FREE_PROFILE_LIMIT } from "../lib/companies.js";
 import { getTier } from "../lib/tier.js";
-import { t } from "../lib/i18n.js";
+import { resolveLang, t, VI_ENABLED } from "../lib/i18n.js";
 
 export default async function ProfilesPage({ searchParams }) {
   const sp = searchParams ? await searchParams : {};
-  const lang = sp.lang === "en" ? "en" : "vi";
+  const lang = resolveLang(sp.lang);
   const tr = t(lang);
   const qs = lang === "en" ? "?lang=en" : "";
   const data = await loadCompanies();

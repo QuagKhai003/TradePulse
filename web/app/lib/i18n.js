@@ -1,9 +1,20 @@
 /**
- * i18n.js — VN-default UI strings (plan §10.4: Vietnamese first, English second).
+ * i18n.js — UI strings.
  * @context  Tiny hand table for the MVP. Grows into a real i18n lib when screens multiply.
  * @limits   Strings only.
- * @affects  page.js + components read via t(lang).
+ * @affects  page.js + components read via t(lang); every page resolves its language via resolveLang().
  */
+
+// The Vietnamese build is PARKED (owner's call, 2026-07-14): 1,208 of the 1,240 products still carry
+// English-only names, so a "Vietnamese" UI would have shown English product names anyway. The vi
+// strings below stay put — flip this to true to turn the VN build back on, no other change needed.
+export const VI_ENABLED = false;
+
+// Single place that decides the page language. While VI is parked, everything renders English.
+export function resolveLang(v) {
+  if (!VI_ENABLED) return "en";
+  return v === "en" ? "en" : "vi";
+}
 const STRINGS = {
   vi: {
     tagline: "Ra-đa nhu cầu xuất khẩu",
@@ -30,6 +41,8 @@ const STRINGS = {
     tabSignals: "Tín hiệu", tabTenders: "Đấu thầu",
     tendersTitle: "Bên mua đang mở thầu",
     tendersNone: "Chưa có gói thầu đang mở cho sản phẩm này.",
+    tendersHere: "Bên mua tại đây đang mở thầu",
+    asOf: "Số liệu đến",
     sort: "Sắp xếp",
     sortNameAsc: "Tên (A–Z)", sortNameDesc: "Tên (Z–A)",
     sortChangeUp: "Tăng nhiều nhất (%)", sortChangeDown: "Giảm nhiều nhất (%)",
@@ -84,7 +97,7 @@ const STRINGS = {
     tagline: "Export demand radar",
     subtitle: "Where world demand is moving — for Vietnamese exporters",
     searchPlaceholder: "See a product's signal… (e.g. pellets, coffee, shrimp)",
-    searchHere: "Switch product in this country…",
+    searchHere: "Search a product in this country…",
     noCountryProduct: "This country has no trade data for",
     viewingSignal: "Signal",
     product: "Product",
@@ -105,6 +118,8 @@ const STRINGS = {
     tabSignals: "Signals", tabTenders: "Tenders",
     tendersTitle: "Buyers with open tenders",
     tendersNone: "No open tenders for this product yet.",
+    tendersHere: "Public buyers here have open tenders",
+    asOf: "Data as of",
     sort: "Sort",
     sortNameAsc: "Name (A–Z)", sortNameDesc: "Name (Z–A)",
     sortChangeUp: "Biggest rise (%)", sortChangeDown: "Biggest drop (%)",

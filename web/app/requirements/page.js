@@ -7,11 +7,11 @@
  */
 import Link from "next/link";
 import { loadRequirementIndex } from "../lib/requirements.js";
-import { t } from "../lib/i18n.js";
+import { resolveLang, t, VI_ENABLED } from "../lib/i18n.js";
 
 export default async function RequirementsIndex({ searchParams }) {
   const sp = searchParams ? await searchParams : {};
-  const lang = sp.lang === "en" ? "en" : "vi";
+  const lang = resolveLang(sp.lang);
   const tr = t(lang);
   const qs = lang === "en" ? "?lang=en" : "";
   const pages = await loadRequirementIndex();

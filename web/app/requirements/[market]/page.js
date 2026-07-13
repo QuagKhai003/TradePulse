@@ -11,12 +11,12 @@ import RequirementChecklist from "../../components/RequirementChecklist.js";
 import WatchButton from "../../components/WatchButton.js";
 import { loadRequirement } from "../../lib/requirements.js";
 import { getTier } from "../../lib/tier.js";
-import { t } from "../../lib/i18n.js";
+import { resolveLang, t, VI_ENABLED } from "../../lib/i18n.js";
 
 export default async function RequirementPage({ params, searchParams }) {
   const { market } = await params;
   const sp = searchParams ? await searchParams : {};
-  const lang = sp.lang === "en" ? "en" : "vi";
+  const lang = resolveLang(sp.lang);
   const paid = (await getTier()) === "paid";
   const tr = t(lang);
   const qs = lang === "en" ? "?lang=en" : "";

@@ -35,13 +35,15 @@ def main() -> None:
     ap.add_argument("--snapshot", default=str(DEFAULT_SNAPSHOT), help="web snapshot output path")
     ap.add_argument("--tenders", action="store_true",
                     help="also pull EU TED tenders (forward demand: who is buying now)")
+    ap.add_argument("--export-only", action="store_true",
+                    help="skip every network pull; rebuild snapshots/signals from the stored DB")
     args = ap.parse_args()
 
     now_iso = datetime.now(timezone.utc).isoformat()
     conn = connect(args.db)
 
-    sources = get_sources(args.source.split(","), freqs=tuple(args.freq))
-    n = run_multi(sources, conn)
+    sources = [] if args.export_only else get_sources(args.source.split(","), freqs=tuple(args.freq))
+    n = 0 if args.export_only else run_multi(sources, conn)
 
     prev = fetch_signals(conn)                       # state before this run (for band crossings)
     sigs = compute_signals(fetch_flows(conn), now_iso)
@@ -83,15 +85,17 @@ def main() -> None:
         print(f"[tradepulse] sourcing (quarterly, {len(FOCUS_REPORTERS)} focus reporters) [{' '.join(srcs)}]")
 
     # --- Forward demand: EU TED tenders (who is buying RIGHT NOW) — plan §9.2 / Phase 2.2 ---
-    if args.tenders:
+    if args.tenders or args.export_only:
         from datetime import date, timedelta
         from .config import TENDER_CPV, TENDER_LOOKBACK_DAYS
         from .db import upsert_tenders
-        from .sources.ted import TedSource
         today = date.today()
-        since = (today - timedelta(days=TENDER_LOOKBACK_DAYS)).strftime("%Y%m%d")
-        rows = TedSource().pull(TENDER_CPV, since, now_iso)
-        upsert_tenders(conn, rows)
+        rows = []
+        if not args.export_only:                     # --export-only rewrites the files from stored rows
+            from .sources.ted import TedSource
+            since = (today - timedelta(days=TENDER_LOOKBACK_DAYS)).strftime("%Y%m%d")
+            rows = TedSource().pull(TENDER_CPV, since, now_iso)
+            upsert_tenders(conn, rows)
         open_n = 0
         for hs in TENDER_CPV:
             ten = build_tenders(conn, hs, today.isoformat())
