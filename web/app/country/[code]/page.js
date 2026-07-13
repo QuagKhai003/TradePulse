@@ -6,6 +6,7 @@
  * @affects  Reads lib/snapshot; renders WatchButton.
  */
 import Link from "next/link";
+import SearchBox from "../../components/SearchBox.js";
 import WatchButton from "../../components/WatchButton.js";
 import PartnerTable from "../../components/PartnerTable.js";
 import SourcingChart from "../../components/SourcingChart.js";
@@ -54,6 +55,22 @@ export default async function CountryPage({ params, searchParams }) {
   const backHome = `/?hs=${hs}${lang === "en" ? "&lang=en" : ""}`;
   const c = snap?.countries.find((x) => String(x.code) === String(code));
 
+  // Switching product from THIS page can land on a product the country doesn't trade — that's a normal
+  // empty state, not a 404. Keep the header + search so the user can pick another product right here.
+  if (snap && !c) {
+    const prod = lang === "en" ? snap.product.name_en : snap.product.name_vi;
+    return (
+      <main className="page">
+        <header className="topbar">
+          <div className="brand"><Link className="logo" href={backHome}>◈ TradePulse</Link></div>
+          <div className="country-search"><SearchBox lang={lang} placeholder={tr.searchHere} countryCode={code} /></div>
+          <a className="langswitch" href={`?lang=${lang === "en" ? "vi" : "en"}`}>{tr.lang}</a>
+        </header>
+        <Link className="back" href={backHome}>{tr.backMap}</Link>
+        <div className="empty">{tr.noCountryProduct} <b>{prod}</b>.</div>
+      </main>
+    );
+  }
   if (!snap || !c) return <main className="page"><div className="empty">404 · <Link href={backHome}>{tr.backMap}</Link></div></main>;
 
   const name = lang === "en" ? c.name_en : c.name_vi;
@@ -64,7 +81,9 @@ export default async function CountryPage({ params, searchParams }) {
   return (
     <main className="page">
       <header className="topbar">
-        <div className="brand"><Link className="logo" href={backHome}>◈ TradePulse</Link><span className="tagline">{tr.tagline}</span></div>
+        <div className="brand"><Link className="logo" href={backHome}>◈ TradePulse</Link></div>
+        {/* Switch product WITHOUT going back to the globe — stays on this country. */}
+        <div className="country-search"><SearchBox lang={lang} placeholder={tr.searchHere} countryCode={c.code} /></div>
         <a className="langswitch" href={`?lang=${lang === "en" ? "vi" : "en"}`}>{tr.lang}</a>
       </header>
 

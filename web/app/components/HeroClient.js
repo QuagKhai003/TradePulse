@@ -64,8 +64,9 @@ export default function HeroClient({ snapshot, tenders = [], hs, initialLang, in
     <Segmented idBase="panel-ind" value={panel} onChange={setPanel} size="sm"
       options={[{ v: "signals", label: tr.tabSignals }, { v: "tenders", label: `${tr.tabTenders} ${tenders.length}` }]} />
   ) : null;
-  const feedTools = (<><SortMenu value={sort} onChange={setSort} t={tr} />{freqToggle}{flowToggle}{panelTabs}</>);
-  const tenderTools = panelTabs;
+  // Only the SORT belongs to the feed. Flow + grain drive the GLOBE, so they live on the globe
+  // control bar below — cramming all four into a 346px panel header overflowed it.
+  const feedTools = <SortMenu value={sort} onChange={setSort} t={tr} />;
 
   return (
     <main className="home">
@@ -92,13 +93,19 @@ export default function HeroClient({ snapshot, tenders = [], hs, initialLang, in
         </MotionPanel>
 
         <MotionPanel from="right" delay={0.05} className="panel-col right glasscol">
+          {panelTabs && <div className="panel-tabsrow">{panelTabs}</div>}
           {panel === "tenders"
-            ? <TenderList tenders={tenders} lang={lang} t={tr} tools={tenderTools} />
+            ? <TenderList tenders={tenders} lang={lang} t={tr} />
             : <GlobalFeed countries={snapshot.countries} flow={flow} freq={freq} lang={lang} t={tr} hs={hs} sort={sort} tools={feedTools} />}
         </MotionPanel>
 
+        <div className="hero-controls-bar">
+          {flowToggle}
+          {freqToggle}
+        </div>
+
         <div className="hero-foot">
-          {!isTotal && <span className="chip on-dark strong">{product}</span>}
+          <span className="viewing"><b>{product}</b></span>
           <span className="foot-hint">{tr.dataUpdated} {updated} · <b className="num">{snapshot.countries.length}</b> {tr.allCountries}</span>
         </div>
         {snapshot.is_sample && <div className="hero-sample">⚠ {tr.sample}</div>}

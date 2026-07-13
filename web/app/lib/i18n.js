@@ -8,7 +8,10 @@ const STRINGS = {
   vi: {
     tagline: "Ra-đa nhu cầu xuất khẩu",
     subtitle: "Nhu cầu thế giới đang dịch chuyển ở đâu — cho nhà xuất khẩu Việt Nam",
-    searchPlaceholder: "Tìm sản phẩm… (vd: viên nén, trà, cà phê, tôm)",
+    searchPlaceholder: "Xem tín hiệu sản phẩm… (vd: viên nén, cà phê, tôm)",
+    searchHere: "Đổi sản phẩm tại nước này…",
+    noCountryProduct: "Nước này chưa có dữ liệu giao dịch cho",
+    viewingSignal: "Tín hiệu",
     product: "Sản phẩm",
     flowImport: "Nước nhập khẩu báo cáo",
     period: "Kỳ",
@@ -80,7 +83,10 @@ const STRINGS = {
   en: {
     tagline: "Export demand radar",
     subtitle: "Where world demand is moving — for Vietnamese exporters",
-    searchPlaceholder: "Search a product… (e.g. pellet, tea, coffee, shrimp)",
+    searchPlaceholder: "See a product's signal… (e.g. pellets, coffee, shrimp)",
+    searchHere: "Switch product in this country…",
+    noCountryProduct: "This country has no trade data for",
+    viewingSignal: "Signal",
     product: "Product",
     flowImport: "Importer-reported",
     period: "Period",

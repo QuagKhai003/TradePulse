@@ -4,13 +4,14 @@
  * @context  The single search box: type Vietnamese/English words, pick a product, the page
  *           re-renders for it. Covered products show a data badge; uncovered show "locked".
  * @limits   Client island (needs keystroke state). Pure UI over lib/catalog; no fetching.
- * @affects  Navigates to /?hs=<code> (keeps lang). Read by page.js.
+ * @affects  Navigates to /?hs=<code> on the globe, or /country/<code>?hs=<code> when used ON a
+ *           country page — so the user can switch product without bouncing back to the globe.
  */
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { search } from "../lib/catalog.js";
 
-export default function SearchBox({ lang, placeholder }) {
+export default function SearchBox({ lang, placeholder, countryCode }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -19,7 +20,9 @@ export default function SearchBox({ lang, placeholder }) {
   function pick(hs6) {
     setQ("");
     setOpen(false);
-    router.push(`/?hs=${hs6}${lang === "en" ? "&lang=en" : ""}`);
+    // Searching from a country page keeps you on that country — just swaps the product.
+    const base = countryCode ? `/country/${countryCode}` : "/";
+    router.push(`${base}?hs=${hs6}${lang === "en" ? "&lang=en" : ""}`);
   }
 
   return (

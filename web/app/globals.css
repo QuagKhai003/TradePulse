@@ -400,7 +400,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 
 .glasscol { background: rgba(13,20,42,.6); backdrop-filter: blur(14px); border: 1px solid rgba(124,142,196,.2); border-radius: var(--r-lg); overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
 .col-fill { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-.panel-h { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; padding: 13px 15px 9px; flex: none; flex-wrap: wrap; }
+.panel-h { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; padding: 11px 15px 9px; flex: none; flex-wrap: wrap; min-width: 0; }
+.panel-h h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.panel-h-tools { flex: none; }
 .panel-h h2 { margin: 0; color: #9fb0d0; white-space: nowrap; font-size: var(--fs-2xs); letter-spacing: .06em; }
 .panel-h-tools { display: flex; align-items: center; gap: 8px; }
 .panel-h .feed-count { background: rgba(124,142,196,.16); color: #b6c4de; margin-left: 6px; }
@@ -505,6 +507,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 @keyframes mpanel-top { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: none; } }
 .globe-intro { animation: globe-in 1.2s var(--ease) both; }
 @keyframes globe-in { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+
+/* country page: product search in the header (switch product, stay on the country) */
+.country-search { flex: 1; max-width: 460px; margin: 0 16px; }
+.country-search .search { max-width: none; }
+
+/* right-panel tab row (Signals | Tenders) — its own row so the header can't overflow */
+.panel-tabsrow { display: flex; padding: 11px 15px 0; flex: none; }
+.panel-tabsrow .seg { width: 100%; }
+
+/* globe controls (flow + grain) — they drive the GLOBE, so they sit with it, not in the panel */
+.hero-controls-bar {
+  position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+}
+.viewing { color: #eaf0fb; font-size: var(--fs-sm); }
+.viewing b { font-weight: 700; }
 
 /* tenders (forward demand) */
 .tender-due { font-size: var(--fs-2xs); font-weight: 700; color: #9fb0d0; white-space: nowrap; }
