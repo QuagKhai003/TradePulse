@@ -9,7 +9,7 @@
 import Link from "next/link";
 import { bandArrow, bandLabel, fmtPct, fmtPeriod, fmtUSD, isFeedSignal, sigColor, slotFor } from "../lib/format.js";
 
-export default function GlobalFeed({ countries, flow, freq = "A", lang, t, hs, sort = "value-desc", tools }) {
+export default function GlobalFeed({ countries, flow, freq = "A", lang, t, hs, sort = "none", tools }) {
   const nm = (x) => (lang === "en" ? x.name_en : x.name_vi) || "";
   const loc = lang === "en" ? "en" : "vi";
   const metric = flow === "export" ? "exp" : "imp";
@@ -22,12 +22,14 @@ export default function GlobalFeed({ countries, flow, freq = "A", lang, t, hs, s
                  value_usd: slot.value_usd, yoy_delta: slot.yoy_delta, band: slot.band,
                  direction: slot.direction, period: slot.period });
   }
+  // "none" is the state the app OPENS in: no re-sort at all — the feed keeps the snapshot's own order
+  // (the ETL ships countries biggest-trader first), so nothing has been reordered behind the user's back.
   if (sort === "name-asc") items.sort((a, b) => nm(a).localeCompare(nm(b), loc));
   else if (sort === "name-desc") items.sort((a, b) => nm(b).localeCompare(nm(a), loc));
   else if (sort === "change-desc") items.sort((a, b) => (b.yoy_delta || 0) - (a.yoy_delta || 0));
   else if (sort === "change-asc") items.sort((a, b) => (a.yoy_delta || 0) - (b.yoy_delta || 0));
   else if (sort === "value-asc") items.sort((a, b) => (a.value_usd || 0) - (b.value_usd || 0));
-  else items.sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0)); // value-desc (default)
+  else if (sort === "value-desc") items.sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0));
   return (
     <div className="col-fill">
       <div className="panel-h">

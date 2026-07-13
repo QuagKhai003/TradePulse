@@ -1,7 +1,8 @@
 "use client";
 /**
  * SortMenu.js — compact sort dropdown for the signals feed (plan §7.1).
- * @context  Sort signals by severity (default), % change, value, or name. The menu is portalled to
+ * @context  Sort signals by name, % change or value — or 'None', the untouched order the app opens
+ *           in (the snapshot's own, biggest-trader first). The menu is portalled to
  *           <body> with fixed positioning so the panel's overflow:hidden + backdrop-filter (a
  *           containing block) can't clip it. Client state; onChange lifts to the hero.
  * @limits   Presentation; onChange lifts to the hero.
@@ -15,6 +16,7 @@ export default function SortMenu({ value, onChange, t }) {
   const [pos, setPos] = useState(null);
   const btnRef = useRef(null);
   const opts = [
+    ["none", t.sortNone],                       // the order the app opens in — nothing re-sorted
     ["name-asc", t.sortNameAsc], ["name-desc", t.sortNameDesc],
     ["change-desc", t.sortChangeUp], ["change-asc", t.sortChangeDown],
     ["value-desc", t.sortValueHigh], ["value-asc", t.sortValueLow],
