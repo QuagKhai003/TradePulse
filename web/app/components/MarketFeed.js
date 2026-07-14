@@ -108,7 +108,7 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
               {items.length > CAP && <p>{t.showingOf.replace("{n}", CAP).replace("{total}", items.length)}</p>}
               {isAggregate && <p>{t.aggregateNote}</p>}
               {cpv && !cpv.exact && cpv.label && (
-                <p>{t.cpvApprox} <b>{cpv.label}</b> <span className="num">({cpv.cpv})</span> — {t.cpvApproxWhy}</p>
+                <p>{t.cpvNear} <b>{cpv.label}</b> <span className="num">({cpv.cpv})</span></p>
               )}
               {cpv?.exact && <p>{t.cpvExact} <span className="num">{cpv.cpv}</span></p>}
             </div>
@@ -144,9 +144,9 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
 }
 
 function emptyLine(tab, product, country, t) {
-  if (tab === "buyers") return `${t.tendersNoneHere} ${country}. ${t.tendersElsewhereNote}`;
-  if (tab === "sellers") return `${t.sellersNone} ${product} ${t.inCountry} ${country}. ${t.sellersWhy}`;
-  return `${t.ordersNone} ${product} ${t.inCountry} ${country}.`;
+  if (tab === "buyers") return t.emptyBuyers;
+  if (tab === "sellers") return t.emptySellers;
+  return t.emptyOrders;
 }
 
 // One shape for all three tabs: an organisation + the record that proves it.
