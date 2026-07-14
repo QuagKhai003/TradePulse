@@ -49,6 +49,7 @@ def _quarter_of(month: str) -> str:
 
 class ComtradeSource:
     name = "comtrade"
+    batched = True          # cmdCode takes a LIST -> pull() wants many products at once, not one
 
     PERIODS_PER_CALL = 12   # authenticated /data hard limit: "Maximum number of periods is 12"
     MONTHLY_ALL_CHUNK = 1   # all-reporters monthly is heavy -> ONE month per call (12 -> timeout)
@@ -56,8 +57,10 @@ class ComtradeSource:
     # 1,240-product refresh possible at all on a free key (~500 calls/day): 1 call per 10 products per
     # year instead of 1 per product per year. The API truncates a response at ROW_CAP rows, so a batch
     # that comes back at the cap is re-fetched in halves (silent truncation would drop whole countries).
-    CODES_PER_CALL = 10
+    CODES_PER_CALL = 40
     ROW_CAP = 100_000
+    # server-side equivalent of _is_total_row: the fully-aggregated cell only
+    TOTALS_ONLY = {"customsCode": "C00", "motCode": "0", "partner2Code": "0"}
 
     def __init__(self, key: str | None = None, months: int = 24, years: int = 6,
                  months_sourcing: int = 24, timeout: int = 60, pause: float = 1.2,
@@ -112,7 +115,8 @@ class ComtradeSource:
 
     def _annual_batch(self, codes: list[str], year: int) -> list[dict]:
         """One call for many products; halve and retry if the row cap truncated the response."""
-        params = {"cmdCode": ",".join(codes), "flowCode": "M,X", "partnerCode": "0", "period": year}
+        params = {"cmdCode": ",".join(codes), "flowCode": "M,X", "partnerCode": "0", "period": year,
+                  **self.TOTALS_ONLY}
         data = self._get(f"{DATA_ANNUAL}?{urllib.parse.urlencode(params)}", auth=True)
         time.sleep(self.pause)
         if len(data) >= self.ROW_CAP and len(codes) > 1:

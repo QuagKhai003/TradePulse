@@ -20,6 +20,7 @@ from .sources import (BaciSource, ComtradeSource, EurostatSource, FixtureSource,
                       TradeSource, UKHmrcSource, USCensusSource)
 from .transform import transform_all
 
+PRODUCTS_PER_UPSERT = 80      # how much work a killed run can lose
 RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
 
 
@@ -83,21 +84,38 @@ def run_multi(sources: list[TradeSource], conn, *, raw_dir: Path = RAW_DIR, toda
         else:
             api_sources.append(source)
 
+    # A BATCHED source takes many products in ONE request (Comtrade's cmdCode is a comma-separated
+    # list). Asking it product-by-product wastes that entirely: 1,240 products x 2 revisable years is
+    # 2,480 calls one-at-a-time versus ~250 batched — the difference between ~17 hours and under an
+    # hour. Non-batched API sources (census/eurostat/hmrc) still go one product per call.
+    batched = [s for s in api_sources if getattr(s, "batched", False)]
+    per_product = [s for s in api_sources if not getattr(s, "batched", False)]
+
     total = 0
-    # Per PRODUCT: combine the bulk rows with each API source, merge, upsert — so a slow/throttled/
-    # killed run keeps the products already finished, and cells still merge correctly (a cell lives
-    # within one product, so merging per product == merging globally).
-    for hs in config.COVERED_HS:
-        rows: list[dict] = list(bulk_by_hs.get(hs, ()))
-        for source in api_sources:
-            raw = source.pull([hs], reporters, None, skip=skip)
+    # Work in CHUNKS of products and upsert each chunk: a slow/throttled/killed run keeps every chunk
+    # it finished. Merging stays correct because a cell lives within one product, so merging
+    # per product == merging globally.
+    for chunk in _chunks(config.COVERED_HS, PRODUCTS_PER_UPSERT):
+        rows_by_hs: dict[str, list] = {hs: list(bulk_by_hs.get(hs, ())) for hs in chunk}
+        for source in batched:
+            raw = source.pull(chunk, reporters, None, skip=skip)
             raw_by[source.name] += raw
-            rows += transform_all(raw, source.name)
-        if rows:
-            total += upsert_trade_flows(conn, merge_flows(rows))
+            for row in transform_all(raw, source.name):
+                rows_by_hs.setdefault(row["hs6"], []).append(row)
+        for hs in chunk:
+            for source in per_product:
+                raw = source.pull([hs], reporters, None, skip=skip)
+                raw_by[source.name] += raw
+                rows_by_hs[hs] += transform_all(raw, source.name)
+            if rows_by_hs.get(hs):
+                total += upsert_trade_flows(conn, merge_flows(rows_by_hs[hs]))
     for name, raw in raw_by.items():
         _store_raw(raw, name, raw_dir)
     return total
+
+
+def _chunks(items: list, n: int) -> list[list]:
+    return [items[i:i + n] for i in range(0, len(items), n)]
 
 
 def _final_stored(conn, today) -> set:

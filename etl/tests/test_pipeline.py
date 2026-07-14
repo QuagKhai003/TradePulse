@@ -6,6 +6,7 @@ test_pipeline.py — deterministic, offline test for batch 1.1 (ETL -> trade_flo
 """
 import tempfile
 import unittest
+from tradepulse_etl.pipeline import run_multi
 from pathlib import Path
 
 from tradepulse_etl import config
@@ -55,3 +56,29 @@ class PipelineTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BatchedSourceTest(unittest.TestCase):
+    """A batched source must be handed MANY products per call — asking it one at a time throws away
+    the whole point of Comtrade's comma-separated cmdCode (2,480 calls vs ~250)."""
+
+    class Batched:
+        name, batched = "comtrade", True
+
+        def __init__(self):
+            self.calls = []
+
+        def pull(self, hs_codes, reporters, partners, skip=frozenset()):
+            self.calls.append(list(hs_codes))
+            return [{"reporterCode": 704, "partnerCode": 0, "cmdCode": hs, "period": "2025",
+                     "flowCode": "X", "primaryValue": 1.0, "netWgt": 1.0, "qtyUnitAbbr": "kg"}
+                    for hs in hs_codes]
+
+    def test_batched_source_gets_every_product_at_once(self):
+        src = self.Batched()
+        conn = connect(":memory:")
+        run_multi([src], conn, raw_dir=Path(tempfile.mkdtemp()))
+        # one call per chunk, each carrying many products — never 1,240 single-product calls
+        self.assertLess(len(src.calls), len(config.COVERED_HS))
+        self.assertGreater(len(src.calls[0]), 1)
+        self.assertEqual(sorted(sum(src.calls, [])), sorted(config.COVERED_HS))
