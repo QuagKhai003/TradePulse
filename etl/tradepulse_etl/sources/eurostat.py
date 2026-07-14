@@ -1,17 +1,21 @@
 """
-eurostat.py — EU source (Eurostat Comext DS-045409): EU27 extra-EU trade per HS, EUR converted to USD.
-@context  Fresher + authoritative for the EU (reporter 97) than Comtrade. Comext reports the EU as one
-          (`EU27_2020`) trading with the rest of the world (`EXT_EU27_2020` = extra-EU), which is exactly
-          our World-partner demand measure. Values are EUR -> converted to USD via fx.to_usd so they
-          merge with Comtrade/Census. Keyless. Annual now; quarterly/monthly are a later increment.
-@warn     Use partner EXT_EU27_2020 (extra-EU), NOT the all-partner total (that includes intra-EU).
+eurostat.py — EU source via Eurostat Comext dataset DS-059341 (the live successor to the retired
+DS-045409). API only, NO bulk download.
+@context  Fresher + authoritative for the EU (reporter 97) than the Comtrade API. Comext reports the
+          EU27 as one bloc (`EU27_2020`) trading with the rest of the world (`EXT_EU27_2020` = extra-EU)
+          — exactly our World-partner demand measure. Monthly, fresh to ~last month (Apr 2026 when
+          wired). Values are EUR -> USD via fx.to_usd so they merge with Comtrade/Census/KCS.
+@warn     Partner MUST be EXT_EU27_2020 (extra-EU), NOT the all-partner total (includes intra-EU).
+          The OLD dataset DS-045409 now faults (140); DS-059341 is the current one (dims:
+          freq.reporter.partner.product.flow.indicators; indicator VALUE_EUR). Product accepts HS4 or HS6.
 @done     pull() -> Comtrade-shaped raw rows (reporter=97, partner=World); _parse() pure + tested.
-@limits   Network in _get + ECBFx. Skips TOTAL (leave to Comtrade). Honours the incremental `skip` set.
-@affects  Implements base.TradeSource; merged in pipeline. Tested by tests/test_eurostat.py.
+@limits   Network in _get + ECBFx. Skips TOTAL (Comtrade covers it). SDMX-CSV (stdlib csv). Keyless.
+@affects  Implements the source protocol; merged in the pipeline. Tested by tests/test_eurostat.py.
 """
 from __future__ import annotations
 
-import json
+import csv
+import io
 import time
 import urllib.parse
 import urllib.request
@@ -21,18 +25,20 @@ from ..fx import ECBFx, to_usd
 
 EU_REPORTER = 97
 WORLD = 0
-BASE = "https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/data/DS-045409"
-_FLOW = {"1": "M", "2": "X"}   # Comext flow code -> our flow (import / export)
+BASE = "https://ec.europa.eu/eurostat/api/comext/dissemination/sdmx/2.1/data/DS-059341"
+_FLOW = {"1": "M", "2": "X"}      # Comext flow code -> our flow
 
 
 class EurostatSource:
     name = "eurostat"
 
-    def __init__(self, years: int = 6, timeout: int = 60, pause: float = 0.4, fx: dict | None = None):
+    def __init__(self, years: int = 3, timeout: int = 60, pause: float = 0.4,
+                 freqs: tuple[str, ...] = ("A",), fx: dict | None = None):
         self.years = years
         self.timeout = timeout
         self.pause = pause
-        self._fx = fx          # {"USD": {period: rate}}; fetched once if not injected
+        self.freqs = freqs
+        self._fx = fx
 
     def _usd_per_eur(self) -> dict:
         if self._fx is None:
@@ -42,50 +48,73 @@ class EurostatSource:
     def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int] | None,
              skip: frozenset = frozenset()) -> list[dict]:
         usd = self._usd_per_eur()
-        years = [str(y) for y in range(date.today().year - self.years, date.today().year)]
+        start = f"{date.today().year - self.years}-01"
         rows: list[dict] = []
         for hs in hs_codes:
             if hs == "TOTAL":
                 continue
-            wanted = {y for y in years if (hs, y) not in skip}   # incremental
-            if not wanted:
-                continue
-            lo, hi = min(wanted), max(wanted)
-            for flow_code, flow in _FLOW.items():
-                key = f"A.EU27_2020.EXT_EU27_2020.{hs}.{flow_code}.VALUE_IN_EUROS"
-                params = {"format": "JSON", "startPeriod": lo, "endPeriod": hi}
-                data = self._get(f"{BASE}/{key}?{urllib.parse.urlencode(params)}")
-                rows += self._parse(data, hs, flow, usd, wanted)
-                time.sleep(self.pause)
+            # one call per product: flow blank -> both flows, monthly, value only.
+            key = f"M.EU27_2020.EXT_EU27_2020.{hs}..VALUE_EUR"
+            url = f"{BASE}/{key}?" + urllib.parse.urlencode({"format": "SDMX-CSV", "startPeriod": start})
+            text = self._get(url)
+            if text:
+                rows += self._parse(text, hs, usd, self.freqs)
+            time.sleep(self.pause)
         return rows
 
-    # --- pure: JSON-stat -> USD raw rows (one per period), EUR converted via the FX step ---
+    # --- pure: SDMX-CSV -> USD rows, monthly EUR aggregated to complete quarters + years ---
     @staticmethod
-    def _parse(data: dict | None, hs: str, flow: str, usd_per_eur: dict, wanted: set) -> list[dict]:
-        if not data or "value" not in data:
-            return []
-        tcat = data.get("dimension", {}).get("time", {}).get("category", {}).get("index", {})
-        vals = data.get("value", {})
-        out = []
-        for period, idx in tcat.items():
-            if period not in wanted:
+    def _parse(text: str, hs: str, usd_per_eur: dict, freqs: tuple) -> list[dict]:
+        month_eur: dict[tuple, float] = {}     # (flow, 'YYYY-MM') -> EUR
+        for r in csv.DictReader(io.StringIO(text)):
+            flow = _FLOW.get((r.get("flow") or "").strip())
+            period = (r.get("TIME_PERIOD") or "").strip()      # 'YYYY-MM'
+            if not flow or len(period) != 7:
                 continue
-            v = vals.get(str(idx))
-            if v is None:
+            try:
+                eur = float(r.get("OBS_VALUE") or 0)
+            except ValueError:
                 continue
-            usd_v = to_usd(float(v), "EUR", period, usd_per_eur, {})
-            if not usd_v or usd_v <= 0:
-                continue
-            out.append({"reporterCode": EU_REPORTER, "partnerCode": WORLD, "cmdCode": hs,
-                        "period": period, "flowCode": flow, "primaryValue": round(usd_v, 2),
-                        "netWgt": None, "qtyUnitAbbr": None, "publishedDate": f"{period}-12"})
+            if eur > 0:
+                month_eur[(flow, period)] = month_eur.get((flow, period), 0.0) + eur
+
+        out: list[dict] = []
+
+        def emit(flow: str, period: str, eur: float) -> None:
+            # FX table is annual (keyed by year); convert with the period's YEAR (period may be a
+            # quarter like '2026-Q1' or a year '2026').
+            usd = to_usd(eur, "EUR", period[:4], usd_per_eur, {})
+            if usd and usd > 0:
+                out.append({"reporterCode": EU_REPORTER, "partnerCode": WORLD, "cmdCode": hs,
+                            "period": period, "flowCode": flow, "primaryValue": round(usd, 2),
+                            "netWgt": None, "qtyUnitAbbr": None, "publishedDate": None})
+
+        if "Q" in freqs:
+            q: dict[tuple, list] = {}
+            for (flow, ym), v in month_eur.items():
+                y, m = ym.split("-")
+                q.setdefault((flow, f"{y}-Q{(int(m) - 1) // 3 + 1}"), []).append(v)
+            for (flow, period), vals in q.items():
+                if len(vals) >= 3:                              # complete quarter only
+                    emit(flow, period, sum(vals))
+        if "A" in freqs:
+            yr: dict[tuple, list] = {}
+            for (flow, ym), v in month_eur.items():
+                yr.setdefault((flow, ym[:4]), []).append(v)
+            for (flow, period), vals in yr.items():
+                if len(vals) >= 12:                             # complete year only
+                    emit(flow, period, sum(vals))
         return out
 
-    def _get(self, url: str) -> dict | None:
-        req = urllib.request.Request(url, headers={"User-Agent": "tradepulse/0.1"})
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as r:
-                return json.loads(r.read().decode("utf-8"))
-        except Exception as e:  # noqa: BLE001 — no-data years 404; skip
-            print(f"[eurostat] warn: {type(e).__name__}:{getattr(e, 'code', '')} for {url[:80]}")
-            return None
+    def _get(self, url: str) -> str | None:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                    return r.read().decode("utf-8")
+            except Exception as e:  # noqa: BLE001 — no-data products 404; skip
+                if attempt == 0:
+                    time.sleep(self.pause * 3)
+                    continue
+                print(f"[eurostat] warn: {type(e).__name__}:{getattr(e, 'code', '')} for {url[:70]}")
+                return None

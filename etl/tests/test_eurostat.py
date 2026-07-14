@@ -1,41 +1,48 @@
 """
-test_eurostat.py — EU Comext JSON-stat parse + EUR->USD (sources/eurostat.py). Pure, offline.
-@context  Proves _parse turns a JSON-stat response into Comtrade-shaped USD rows for the EU (reporter
-          97, World partner), converting EUR via the FX rate, one row per wanted period.
+test_eurostat.py — EU Comext (DS-059341) SDMX-CSV parse + EUR->USD (sources/eurostat.py). Pure, offline.
+@context  Proves _parse turns the SDMX-CSV response into Comtrade-shaped USD rows for the EU (reporter
+          97, World partner = extra-EU), converting EUR->USD by the period's YEAR, aggregating the
+          monthly values to complete quarters + years.
 """
 import unittest
 
 from tradepulse_etl.sources.eurostat import EurostatSource
 
-# Two-period JSON-stat (as Eurostat returns): time index maps to positions in `value`.
-DATA = {
-    "value": {"0": 10_000_000_000, "1": 11_859_180_813},
-    "dimension": {"time": {"category": {"index": {"2023": 0, "2024": 1}}}},
-}
-USD_PER_EUR = {"2023": 1.05, "2024": 1.0824}
+# SDMX-CSV as DS-059341 returns it: header + monthly rows. flow 1=import, product 090111, VALUE_EUR.
+# Six months of import data -> two complete quarter rows; not a full year -> no annual row.
+CSV = "DATAFLOW,LAST UPDATE,freq,reporter,partner,product,flow,indicators,TIME_PERIOD,OBS_VALUE\n" + "\n".join(
+    f"ESTAT:DS-059341(1.0),15/06/26,M,EU27_2020,EXT_EU27_2020,090111,1,VALUE_EUR,2026-{m:02d},1000000000"
+    for m in range(1, 7)
+)
+USD_PER_EUR = {"2026": 1.10}
 
 
-class EurostatTest(unittest.TestCase):
-    def test_parse_eur_to_usd(self):
-        out = EurostatSource._parse(DATA, "090111", "M", USD_PER_EUR, {"2023", "2024"})
-        self.assertEqual(len(out), 2)
-        r24 = next(r for r in out if r["period"] == "2024")
-        self.assertEqual(r24["reporterCode"], 97)          # EU
-        self.assertEqual(r24["partnerCode"], 0)            # World (extra-EU)
-        self.assertEqual(r24["flowCode"], "M")
-        self.assertAlmostEqual(r24["primaryValue"], round(11_859_180_813 * 1.0824, 2))  # EUR->USD
-        self.assertEqual(r24["publishedDate"], "2024-12")
+class EurostatParseTest(unittest.TestCase):
+    def test_quarters_aggregated_and_converted(self):
+        out = EurostatSource._parse(CSV, "090111", USD_PER_EUR, ("A", "Q"))
+        by = {r["period"]: r for r in out}
+        self.assertIn("2026-Q1", by)
+        self.assertIn("2026-Q2", by)
+        self.assertNotIn("2026", by)                       # only 6 months -> no complete year
+        q1 = by["2026-Q1"]
+        self.assertEqual(q1["reporterCode"], 97)           # EU
+        self.assertEqual(q1["partnerCode"], 0)             # World (extra-EU)
+        self.assertEqual(q1["flowCode"], "M")
+        self.assertAlmostEqual(q1["primaryValue"], round(3_000_000_000 * 1.10, 2))  # 3 months x EUR->USD
 
-    def test_wanted_filters_periods(self):
-        out = EurostatSource._parse(DATA, "090111", "M", USD_PER_EUR, {"2024"})
-        self.assertEqual([r["period"] for r in out], ["2024"])
+    def test_complete_year_emitted(self):
+        csv12 = "DATAFLOW,LAST UPDATE,freq,reporter,partner,product,flow,indicators,TIME_PERIOD,OBS_VALUE\n" + "\n".join(
+            f"x,x,M,EU27_2020,EXT_EU27_2020,090111,1,VALUE_EUR,2025-{m:02d},1000000000" for m in range(1, 13))
+        out = EurostatSource._parse(csv12, "090111", {"2025": 1.0}, ("A",))
+        yr = next(r for r in out if r["period"] == "2025")
+        self.assertEqual(yr["primaryValue"], 12_000_000_000)
 
-    def test_missing_rate_drops_row(self):
-        out = EurostatSource._parse(DATA, "090111", "M", {"2024": 1.08}, {"2023", "2024"})
-        self.assertEqual([r["period"] for r in out], ["2024"])   # 2023 has no rate -> dropped
+    def test_missing_rate_drops(self):
+        out = EurostatSource._parse(CSV, "090111", {}, ("Q",))   # no FX rate -> nothing convertible
+        self.assertEqual(out, [])
 
     def test_empty(self):
-        self.assertEqual(EurostatSource._parse(None, "090111", "M", USD_PER_EUR, {"2024"}), [])
+        self.assertEqual(EurostatSource._parse("", "090111", USD_PER_EUR, ("Q",)), [])
 
 
 if __name__ == "__main__":

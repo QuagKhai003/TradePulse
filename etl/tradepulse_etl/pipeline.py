@@ -37,7 +37,7 @@ def get_source(kind: str, period: str | None = None, freqs: tuple[str, ...] = ("
         from .settings import census_key
         return USCensusSource(key=census_key(), freqs=freqs)
     if kind == "eurostat":
-        return EurostatSource()          # keyless (EU); EUR->USD via ECB FX
+        return EurostatSource(freqs=freqs)   # keyless EU (DS-059341); EUR->USD via ECB FX
     if kind == "hmrc":
         return UKHmrcSource()            # keyless (UK); GBP->USD via ECB FX
     if kind == "kcs":
