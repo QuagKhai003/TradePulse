@@ -46,3 +46,38 @@ Format: `L-NNN` (limitation) / `B-NNN` (bug) / `S-NNN` (security/launch risk).
 - **Where:** plan §14, §8; `content/requirements/*.json`, `content/companies/pellets.json`.
 - **Notes:** hard cap ≤20 requirement pages until revenue (maintenance burden, plan §14). Set a
   quarterly review calendar; the "last review" date per page surfaces staleness.
+
+## L-004 — A CPV search returns notices where the product is one buried line item
+**Found:** 2026-07-14 (owner: *"the product is tea but I see many buyers — do you guarantee those are buying tea?"*).
+TED matches a notice if the CPV appears ANYWHERE in it. A school buying a 100-item food framework
+lists tea among the lots, so it came back under "tea" — the feed showed buyers of *Bread* and
+*Mineral water*. Correct match, worthless lead, and it implied a promise we could not keep.
+**Handled:** every notice is classified against the searched CPV (`sources/ted.py::_match_kind`):
+`contract` (the notice's main CPV is this product) · `lot` (a lot's main CPV is) · `basket` (buried).
+Baskets are dropped at export. Measured: 1,574 scraped -> 923 basket / 343 lot / 308 contract.
+**Residual:** a "lot" is real but partial — the buyer wants this product *inside* a bigger contract.
+The UI labels it and shows the contract it sits inside.
+
+## L-005 — The HS->CPV map is verified, but not always the identical good
+**Found:** 2026-07-14, building tender coverage for all 1,240 products.
+No official HS<->CPV crosswalk exists. `reference/_gen_cpv.py` proposes a CPV from the HS heading's
+text and verifies it against live TED, so a code that returns nothing real is dropped (810 -> 654).
+But a verified match can still be a *neighbour*: HS "Vegetables, dried" lands on CPV "Frozen
+vegetables"; HS "Meat of sheep" on CPV "Sheep".
+**Handled:** the matched CPV + label ship in `cpv-match.json` and the UI prints them per product
+("matched to the nearest CPV category: Frozen vegetables"). The 18 pilot products are hand-checked
+and flagged `exact`. Two guards keep the proposal sane: an HS-chapter -> CPV-division rule (without it
+"Cashew nuts" matched CPV 44531600, *fastener* nuts) and a 0.6 score floor (at 0.5 "Crude oil" matched
+"Oil paints"). A weak match is worse than none — the product simply gets no feed.
+**Fix path:** hand-check the mappings for the products we actually sell; tighten HS6 children to their
+narrower CPV (black tea 090240 -> 15863200 rather than the parent tea code).
+
+## L-006 — Tenders, sellers and past orders are EU public procurement only
+**Found:** 2026-07-14 (owner: *"where is my seller tab"* on a non-EU country).
+Our tender/award source is EU TED. A Chinese buyer, a US buyer, or a seller who has never won an EU
+public contract simply does not appear. Absence is a **coverage limit, not a verdict on the company** —
+and if the UI just shows an empty box, a factory owner reads it as "no demand".
+**Handled:** the country page states the limit, shows the product's tenders elsewhere when this
+country has none, and never hides a tab (an empty tab explains itself).
+**Fix path:** US SAM.gov awards, UK Contracts Finder, World Bank / UN awards. Same shape (a winner
+named on a public award), so the same pipeline absorbs them.
