@@ -12,9 +12,11 @@ import PartnerTable from "../../components/PartnerTable.js";
 import SourcingChart from "../../components/SourcingChart.js";
 import QualPanel from "../../components/QualPanel.js";
 import TenderList from "../../components/TenderList.js";
+import SellerList from "../../components/SellerList.js";
+import OrderList from "../../components/OrderList.js";
 import { loadSnapshot } from "../../lib/snapshot.js";
 import { loadSourcing } from "../../lib/sourcing.js";
-import { loadTenders } from "../../lib/tenders.js";
+import { loadAwards, loadSellers, loadTenders } from "../../lib/tenders.js";
 import { resolveLang, t, VI_ENABLED } from "../../lib/i18n.js";
 import { bandArrow, bandColor, bandLabel, fmtPct, fmtPeriod, fmtUSD } from "../../lib/format.js";
 
@@ -85,6 +87,12 @@ export default async function CountryPage({ params, searchParams }) {
   const allTenders = await loadTenders(hs);
   const tHere = allTenders.filter((x) => String(x.buyer_code) === String(c.code));
   const tElse = allTenders.filter((x) => String(x.buyer_code) !== String(c.code));
+  // Sellers BASED here, and every past order this country took part in — as the buyer OR the seller.
+  // Both are the country-scoped slice of the same evidence the globe view shows for the product.
+  const sellersHere = (await loadSellers(hs)).filter((x) => String(x.seller_code) === String(c.code));
+  const allOrders = await loadAwards(hs);
+  const ordersHere = allOrders.filter((x) => String(x.buyer_code) === String(c.code)
+                                          || String(x.seller_code) === String(c.code));
   // The country's OWN latest period — not the snapshot-wide max, which reads as a lie next to figures
   // from an earlier year (the map's newest country can be a year ahead of this one).
   const asOf = [c.exp?.period, c.imp?.period].filter(Boolean).sort().pop() || snap.latest_period;
@@ -138,6 +146,22 @@ export default async function CountryPage({ params, searchParams }) {
             </>
           )}
           <p className="muted tender-note">{tr.tenderSource}</p>
+        </section>
+      )}
+
+      {sellersHere.length > 0 && (
+        <section className="panel tender-sec">
+          <h2>{tr.sellersIn} {name}</h2>
+          <SellerList sellers={sellersHere} product={product} t={tr} />
+          <p className="muted tender-note">{tr.sellerNote}</p>
+        </section>
+      )}
+
+      {ordersHere.length > 0 && (
+        <section className="panel tender-sec">
+          <h2>{tr.ordersIn} {name}</h2>
+          <OrderList orders={ordersHere} product={product} t={tr} />
+          <p className="muted tender-note">{tr.orderNote}</p>
         </section>
       )}
 
