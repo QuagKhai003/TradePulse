@@ -1,14 +1,14 @@
 """
 eurostat.py — EU source via Eurostat Comext dataset DS-059341 (the live successor to the retired
 DS-045409). API only, NO bulk download.
-@context  Fresher + authoritative for the EU (reporter 97) than the Comtrade API. Comext reports the
-          EU27 as one bloc (`EU27_2020`) trading with the rest of the world (`EXT_EU27_2020` = extra-EU)
-          — exactly our World-partner demand measure. Monthly, fresh to ~last month (Apr 2026 when
-          wired). Values are EUR -> USD via fx.to_usd so they merge with Comtrade/Census/KCS.
-@warn     Partner MUST be EXT_EU27_2020 (extra-EU), NOT the all-partner total (includes intra-EU).
-          The OLD dataset DS-045409 now faults (140); DS-059341 is the current one (dims:
+@context  Fresher + authoritative for each EU MEMBER STATE than the Comtrade API. Comext reports every
+          member individually (declarant); we query each with partner=WORLD (total trade) so it overrides
+          Comtrade for Germany, France, ... (see config.SOURCE_AUTHORITY['eurostat'] = the 27 M49 codes).
+          Monthly -> quarters + years. Values are EUR -> USD via fx.to_usd (merge with Comtrade/Census/KCS).
+@warn     The OLD dataset DS-045409 now faults (140); DS-059341 is the current one (dims:
           freq.reporter.partner.product.flow.indicators; indicator VALUE_EUR). Product accepts HS4 or HS6.
-@done     pull() -> Comtrade-shaped raw rows (reporter=97, partner=World); _parse() pure + tested.
+          The API rejects a query with too many reporter values, so members are queried in chunks of 8.
+@done     pull() -> Comtrade-shaped raw rows (reporter=<member M49>, partner=World); _parse() pure + tested.
 @limits   Network in _get + ECBFx. Skips TOTAL (Comtrade covers it). SDMX-CSV (stdlib csv). Keyless.
 @affects  Implements the source protocol; merged in the pipeline. Tested by tests/test_eurostat.py.
 """
