@@ -111,12 +111,17 @@ def build_tenders(conn, hs6: str, today: str) -> list[dict]:
         out.append({"id": r["id"], "hs6": r["hs6"], "title": _subject(r["title"]), "buyer": r["buyer"],
                     "buyer_country": r["buyer_country"], "buyer_code": _m49(r["buyer_country"]),
                     "match": r["match_kind"], "cpv": r["cpv"],
-                    "deadline": r["deadline"], "published": r["published"], "url": r["url"]})
+                    "deadline": r["deadline"], "published": r["published"], "url": _notice_url(r["id"])})
     return out
 
 
 # TED titles read "Country – English subject – LOCAL PROJECT NAME" (the tail stays in the buyer's own
 # language). We display the English subject only; the full local title is one click away on TED.
+def _notice_url(pub: str) -> str:
+    """Canonical TED link for a publication number — the /pdf document view (the bare path 404s)."""
+    return f"https://ted.europa.eu/en/notice/{pub}/pdf"
+
+
 def _subject(title: str) -> str:
     parts = [p.strip() for p in (title or "").split("–")]
     return parts[1] if len(parts) >= 3 and parts[1] else (title or "")
@@ -143,7 +148,7 @@ def build_awards(conn, hs6: str) -> list[dict]:
                     "seller": r["winner"], "seller_country": r["winner_country"],
                     "seller_code": _m49(r["winner_country"]),
                     "match": r["match_kind"], "cpv": r["cpv"], "date": r["award_date"] or r["published"],
-                    "value": r["value"], "currency": r["currency"], "url": r["url"]})
+                    "value": r["value"], "currency": r["currency"], "url": _notice_url(r["id"])})
     return out
 
 

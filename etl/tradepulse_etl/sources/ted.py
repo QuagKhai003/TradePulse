@@ -25,7 +25,9 @@ import time
 import urllib.request
 
 API = "https://api.ted.europa.eu/v3/notices/search"
-NOTICE_URL = "https://ted.europa.eu/en/notice/{}"
+# The bare /notice/<id> path has no document view (404s in a browser). TED's own API returns
+# the canonical link as /notice/<id>/pdf (and /xml) — the PDF opens the real official notice.
+NOTICE_URL = "https://ted.europa.eu/en/notice/{}/pdf"
 FIELDS = ["publication-number", "notice-title", "buyer-name", "buyer-country",
           "deadline-receipt-tender-date-lot", "publication-date", "classification-cpv",
           "main-classification-proc", "main-classification-lot"]
