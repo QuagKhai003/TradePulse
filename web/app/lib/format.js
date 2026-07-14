@@ -118,3 +118,15 @@ export function sigColor(band, direction, dark = false) {
   if (direction === "down") return dark ? "#fb7185" : "#b91c1c";
   return dark ? "#4ade80" : "#15803d";
 }
+
+// Award values come in the notice's own currency (EUR, PLN, ...). Never reuse fmtUSD here: relabelling
+// a EUR contract as $ would be a fabricated number.
+export function fmtMoney(v, cur) {
+  if (!v && v !== 0) return "\u2014";
+  const c = cur || "";
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return `${(v / 1e9).toFixed(2)}B ${c}`.trim();
+  if (abs >= 1e6) return `${(v / 1e6).toFixed(2)}M ${c}`.trim();
+  if (abs >= 1e3) return `${Math.round(v / 1e3)}k ${c}`.trim();
+  return `${Math.round(v)} ${c}`.trim();
+}

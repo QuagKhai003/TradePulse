@@ -30,6 +30,13 @@ FIELDS = ["publication-number", "notice-title", "buyer-name", "buyer-country",
           "deadline-receipt-tender-date-lot", "publication-date", "classification-cpv",
           "main-classification-proc", "main-classification-lot"]
 
+# Award ("result") notices name the WINNING SUPPLIER. That is the only public record of who SELLS a
+# product: sellers do not advertise, but a won contract is published. Sellers and past orders are both
+# derived from these. We take the winner ORGANISATION, its country, the value and the date — and never
+# winner-email / winner-person / winner-tel, which TED also exposes (Golden Rule).
+AWARD_FIELDS = FIELDS + ["winner-name", "winner-country", "winner-decision-date",
+                         "total-value", "total-value-cur", "notice-type"]
+
 
 def _stem(cpv: str) -> str:
     """CPV is hierarchical with trailing zeros: 15863000 (tea) is the parent of 15863200 (black tea).
@@ -89,6 +96,72 @@ class TedSource:
                         rows.append(row)
                 time.sleep(self.pause)
         return rows
+
+    def pull_awards(self, cpv_by_hs: dict[str, list[str]], since: str, scraped_at: str) -> list[dict]:
+        """Awarded contracts: who WON, from whom, for how much. `since` = 'YYYYMMDD'.
+        scope=ALL because an award notice is not an 'ACTIVE' (open) one — the contract is done."""
+        rows: list[dict] = []
+        for hs6, cpvs in cpv_by_hs.items():
+            for cpv in cpvs:
+                q = f"classification-cpv IN ({cpv}) AND publication-date>={since}"
+                data = self._post({"query": q, "fields": AWARD_FIELDS, "page": 1,
+                                   "limit": self.page_size, "scope": "ALL"})
+                for n in (data or {}).get("notices", []) or []:
+                    rows += self._awards(n, hs6, cpv, scraped_at)
+                time.sleep(self.pause)
+        return rows
+
+    # --- pure: one TED award notice -> one row PER WINNER (an award can have several) ---
+    @staticmethod
+    def _awards(n: dict, hs6: str, cpv: str, scraped_at: str) -> list[dict]:
+        winners = n.get("winner-name")
+        if not winners:                                  # not an award notice -> nothing to record
+            return []
+        pub = _text(n.get("publication-number"))
+        title = _text(n.get("notice-title"))
+        if not pub or not title:
+            return []
+        names = winners if isinstance(winners, list) else [winners]
+        countries = n.get("winner-country") or []
+        if not isinstance(countries, list):
+            countries = [countries]
+        # A notice-level total is only meaningful when TED reports exactly ONE — with several lots the
+        # values are per-lot and we cannot attribute them to a winner, so we show no number at all
+        # rather than a wrong one.
+        vals = n.get("total-value") or []
+        if not isinstance(vals, list):
+            vals = [vals]
+        curs = n.get("total-value-cur") or []
+        if not isinstance(curs, list):
+            curs = [curs]
+        value = float(vals[0]) if len(vals) == 1 and str(vals[0]).replace(".", "").isdigit() else None
+        cur = _text(curs[0]) if len(curs) == 1 else None
+
+        out, seen = [], set()
+        for i, w in enumerate(names):
+            name = _text(w)
+            if not name or name in seen:                 # same winner on several lots -> one row
+                continue
+            seen.add(name)
+            out.append({
+                "id": pub,
+                "hs6": hs6,
+                "source": "ted",
+                "cpv": cpv,
+                "match_kind": _match_kind(n, cpv),
+                "title": title,
+                "buyer": _text(n.get("buyer-name")),      # organisation, never a person
+                "buyer_country": _text(n.get("buyer-country")),
+                "winner": name,                           # the SELLER — organisation, never a person
+                "winner_country": _text(countries[i]) if i < len(countries) else _text(countries[0] if countries else None),
+                "award_date": (_text(n.get("winner-decision-date")) or "")[:10] or None,
+                "value": value,
+                "currency": cur,
+                "published": (_text(n.get("publication-date")) or "")[:10] or None,
+                "url": NOTICE_URL.format(pub),
+                "scraped_at": scraped_at,
+            })
+        return out
 
     # --- pure: one TED notice -> one tender row (buyer ORG + link only) ---
     @staticmethod

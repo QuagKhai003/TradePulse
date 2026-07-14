@@ -9,7 +9,7 @@ import HeroClient from "./components/HeroClient.js";
 import SearchBox from "./components/SearchBox.js";
 import LockedProduct from "./components/LockedProduct.js";
 import { loadSnapshot } from "./lib/snapshot.js";
-import { loadTenders } from "./lib/tenders.js";
+import { loadAwards, loadSellers, loadTenders } from "./lib/tenders.js";
 import { loadCompanies, FREE_PROFILE_LIMIT } from "./lib/companies.js";
 import { getTier } from "./lib/tier.js";
 import { lookup } from "./lib/catalog.js";
@@ -22,21 +22,22 @@ export default async function Page({ searchParams }) {
   const tr = t(lang);
   const snap = await loadSnapshot(sp.hs);
   const tenders = await loadTenders((snap && snap.hs6) || sp.hs);
-  // Layer-2 directory for THIS product (curated; only wood pellets so far). Free tier opens the first
-  // few profiles, the rest stay locked — the gate is decided server-side, never in the client.
+  // Past orders (awarded contracts) + the sellers derived from them, plus any hand-curated sellers.
+  const orders = await loadAwards((snap && snap.hs6) || sp.hs);
+  const sellers = await loadSellers((snap && snap.hs6) || sp.hs);
   const companies = await loadCompanies((snap && snap.hs6) || sp.hs);
   const paid = (await getTier()) === "paid";
-  const openIds = companies
-    ? (paid ? companies.companies : companies.companies.slice(0, FREE_PROFILE_LIMIT)).map((c) => c.id)
-    : [];
+  const curatedAll = (companies?.companies || []).filter((c) => c.role === "seller");
+  // Free tier opens the first few curated profiles; the gate is decided server-side, never in the client.
+  const curatedSellers = paid ? curatedAll : curatedAll.slice(0, FREE_PROFILE_LIMIT);
   if (!snap && !sp.hs) return <main className="page"><div className="empty">{tr.noData}</div></main>;
 
   const hs = (snap && snap.hs6) || sp.hs || "440131";
   const covered = !!snap && snap.countries?.length > 0;
 
   if (covered) {
-    return <HeroClient snapshot={snap} tenders={tenders} companies={companies} openIds={openIds}
-                       hs={hs} initialLang={lang} initialFlow={flow} />;
+    return <HeroClient snapshot={snap} tenders={tenders} sellers={sellers} orders={orders}
+                       curatedSellers={curatedSellers} hs={hs} initialLang={lang} initialFlow={flow} />;
   }
 
   // uncovered product -> locked "coming soon" (server-rendered)

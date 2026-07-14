@@ -129,6 +129,67 @@ def _m49(iso3: str | None) -> int | None:
     return _M49_BY_ISO3.get((iso3 or "").upper())
 
 
+def build_awards(conn, hs6: str) -> list[dict]:
+    """PAST ORDERS: awarded contracts for this product. Same on-product filter as tenders — an award
+    where the product is one buried line item of a mixed contract tells a seller nothing."""
+    from .db import fetch_awards
+    out = []
+    for r in fetch_awards(conn, hs6):
+        if (r["match_kind"] or "basket") == "basket":
+            continue
+        out.append({"id": r["id"], "title": _subject(r["title"]),
+                    "buyer": r["buyer"], "buyer_country": r["buyer_country"],
+                    "buyer_code": _m49(r["buyer_country"]),
+                    "seller": r["winner"], "seller_country": r["winner_country"],
+                    "seller_code": _m49(r["winner_country"]),
+                    "match": r["match_kind"], "cpv": r["cpv"], "date": r["award_date"] or r["published"],
+                    "value": r["value"], "currency": r["currency"], "url": r["url"]})
+    return out
+
+
+def build_sellers(awards: list[dict]) -> list[dict]:
+    """SELLERS, derived from past orders. A seller never publishes 'I sell tea' — but a public buyer
+    publishes who WON its tea contract. So a seller here is exactly: an organisation that has won at
+    least one on-product contract. Ranked by wins, then by most recent — deterministic, no judgement.
+    Value is summed only across awards sharing ONE currency; mixed currencies -> no total (never a
+    number we cannot stand behind)."""
+    by: dict[tuple, dict] = {}
+    for a in awards:
+        if not a["seller"]:
+            continue
+        key = (a["seller"], a["seller_country"])
+        s = by.setdefault(key, {"seller": a["seller"], "seller_country": a["seller_country"],
+                                "seller_code": a["seller_code"], "wins": 0, "last": None,
+                                "buyers": [], "value": 0.0, "currency": None, "mixed": False,
+                                "url": a["url"]})
+        s["wins"] += 1
+        if a["date"] and (s["last"] is None or a["date"] > s["last"]):
+            s["last"] = a["date"]
+            s["url"] = a["url"]                       # link to the most recent win
+        if a["buyer"] and a["buyer"] not in s["buyers"]:
+            s["buyers"].append(a["buyer"])
+        if a["value"]:
+            if s["currency"] and a["currency"] != s["currency"]:
+                s["mixed"] = True
+            s["currency"] = s["currency"] or a["currency"]
+            s["value"] += a["value"]
+    out = []
+    for s in by.values():
+        if s["mixed"] or not s["value"]:
+            s["value"], s["currency"] = None, None
+        out.append(s)
+    out.sort(key=lambda s: (-s["wins"], s["last"] or ""), reverse=False)
+    out.sort(key=lambda s: (s["wins"], s["last"] or ""), reverse=True)
+    return out
+
+
+def write_json(data, path: Path | str) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def write_tenders(tenders: list[dict], path: Path | str) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

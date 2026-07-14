@@ -87,21 +87,34 @@ def main() -> None:
     # --- Forward demand: EU TED tenders (who is buying RIGHT NOW) — plan §9.2 / Phase 2.2 ---
     if args.tenders or args.export_only:
         from datetime import date, timedelta
-        from .config import TENDER_CPV, TENDER_LOOKBACK_DAYS
-        from .db import upsert_tenders
+        from .config import TENDER_CPV, TENDER_LOOKBACK_DAYS, AWARD_LOOKBACK_DAYS
+        from .db import upsert_awards, upsert_tenders
         today = date.today()
-        rows = []
+        rows, awards = [], []
         if not args.export_only:                     # --export-only rewrites the files from stored rows
             from .sources.ted import TedSource
+            ted = TedSource()
             since = (today - timedelta(days=TENDER_LOOKBACK_DAYS)).strftime("%Y%m%d")
-            rows = TedSource().pull(TENDER_CPV, since, now_iso)
+            rows = ted.pull(TENDER_CPV, since, now_iso)
             upsert_tenders(conn, rows)
-        open_n = 0
+            # PAST ORDERS: awarded contracts -> also the only public evidence of who SELLS this product.
+            asince = (today - timedelta(days=AWARD_LOOKBACK_DAYS)).strftime("%Y%m%d")
+            awards = ted.pull_awards(TENDER_CPV, asince, now_iso)
+            upsert_awards(conn, awards)
+        open_n = award_n = seller_n = 0
         for hs in TENDER_CPV:
             ten = build_tenders(conn, hs, today.isoformat())
             write_tenders(ten, default_path.parent / f"tenders-{hs}.json")
             open_n += len(ten)
-        print(f"[tradepulse] tenders: {len(rows)} scraped, {open_n} still open, {len(TENDER_CPV)} products")
+            aw = build_awards(conn, hs)                  # past orders
+            se = build_sellers(aw)                       # sellers, derived from them
+            write_json(aw, default_path.parent / f"awards-{hs}.json")
+            write_json(se, default_path.parent / f"sellers-{hs}.json")
+            award_n += len(aw)
+            seller_n += len(se)
+        print(f"[tradepulse] tenders: {len(rows)} scraped, {open_n} still open | "
+              f"awards: {len(awards)} scraped, {award_n} on-product, {seller_n} sellers | "
+              f"{len(TENDER_CPV)} products")
 
     _print_rollup()
 

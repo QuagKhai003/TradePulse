@@ -83,7 +83,10 @@ TENDER_CPV = {
     "080132": ["03222000"],
     "0904":   ["15872100"],              # pepper
 }
-TENDER_LOOKBACK_DAYS = 365               # how far back to ask TED for still-ACTIVE notices
+TENDER_LOOKBACK_DAYS = 365
+# Awards look back further: a past order stays evidence that a company SELLS this product long after
+# the contract closed — that is the point of the sellers list.
+AWARD_LOOKBACK_DAYS = 730               # how far back to ask TED for still-ACTIVE notices
 
 PARTNER_WORLD = 0      # aggregate of all partners
 PARTNER_VIETNAM = 704  # for VN import-share on drill-down (plan §7.3)

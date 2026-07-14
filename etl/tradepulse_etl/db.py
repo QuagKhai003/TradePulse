@@ -68,6 +68,32 @@ CREATE TABLE IF NOT EXISTS tenders (
 );
 
 CREATE INDEX IF NOT EXISTS ix_tenders_hs6 ON tenders (hs6);
+
+--- PAST ORDERS (plan §7.4): awarded contracts — who WON, from whom, for how much.
+--- Sellers do not advertise; a won contract is the only public record that a company SELLS a product.
+--- The SELLERS list is derived from this table. Winner + buyer ORGANISATION only — TED also exposes
+--- winner-email / winner-person, and we never store or show them (Golden Rule).
+CREATE TABLE IF NOT EXISTS awards (
+    id              TEXT    NOT NULL,   -- TED publication-number
+    hs6             TEXT    NOT NULL,
+    winner          TEXT    NOT NULL,   -- the SELLER (organisation)
+    source          TEXT    NOT NULL,
+    cpv             TEXT,
+    match_kind      TEXT,               -- 'contract' | 'lot' | 'basket'
+    title           TEXT    NOT NULL,
+    buyer           TEXT,
+    buyer_country   TEXT,               -- ISO3
+    winner_country  TEXT,               -- ISO3
+    award_date      TEXT,
+    value           REAL,               -- notice total; NULL when TED reports several lot values
+    currency        TEXT,
+    published       TEXT,
+    url             TEXT    NOT NULL,
+    scraped_at      TEXT    NOT NULL,
+    PRIMARY KEY (id, hs6, winner)
+);
+
+CREATE INDEX IF NOT EXISTS ix_awards_hs6 ON awards (hs6);
 """
 
 
@@ -167,6 +193,31 @@ def upsert_tenders(conn: sqlite3.Connection, rows: list[dict]) -> int:
     with conn:
         conn.executemany(sql, rows)
     return len(rows)
+
+
+def upsert_awards(conn: sqlite3.Connection, rows: list[dict]) -> int:
+    """Idempotent on (id, hs6, winner) — one award notice can name several winners."""
+    sql = """
+        INSERT INTO awards
+            (id, hs6, winner, source, cpv, match_kind, title, buyer, buyer_country, winner_country,
+             award_date, value, currency, published, url, scraped_at)
+        VALUES
+            (:id, :hs6, :winner, :source, :cpv, :match_kind, :title, :buyer, :buyer_country,
+             :winner_country, :award_date, :value, :currency, :published, :url, :scraped_at)
+        ON CONFLICT(id, hs6, winner) DO UPDATE SET
+            match_kind=excluded.match_kind, title=excluded.title, buyer=excluded.buyer,
+            buyer_country=excluded.buyer_country, winner_country=excluded.winner_country,
+            award_date=excluded.award_date, value=excluded.value, currency=excluded.currency,
+            published=excluded.published, url=excluded.url, scraped_at=excluded.scraped_at
+    """
+    with conn:
+        conn.executemany(sql, rows)
+    return len(rows)
+
+
+def fetch_awards(conn: sqlite3.Connection, hs6: str) -> list[dict]:
+    sql = "SELECT * FROM awards WHERE hs6 = ? ORDER BY (award_date IS NULL), award_date DESC, published DESC"
+    return [dict(r) for r in conn.execute(sql, (hs6,)).fetchall()]
 
 
 def fetch_tenders(conn: sqlite3.Connection, hs6: str) -> list[dict]:
