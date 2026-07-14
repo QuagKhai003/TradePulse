@@ -184,8 +184,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .flowtag.import { background: var(--brand-tint); color: var(--brand-ink); }
 
 /* ============ drill / panels ============ */
-.back { display: inline-flex; align-items: center; min-height: 38px; margin-bottom: 8px; font-size: 13px; color: var(--muted); text-decoration: none; font-weight: 600; }
-.back:hover { color: var(--brand); }
+/* prominent 'back to map' button (was a faint link) */
+.back { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; margin-bottom: 14px;
+  padding: 0 18px; font-size: 15px; font-weight: 700; color: var(--brand-ink); text-decoration: none;
+  background: var(--brand-tint); border: 1px solid rgba(99,102,241,.28); border-radius: var(--pill);
+  transition: background .15s var(--ease), border-color .15s var(--ease), transform .1s var(--ease); }
+.back:hover { background: #e2e5ff; border-color: var(--brand); }
+.back:active { transform: translateY(1px); }
 .drillhead { margin-bottom: 18px; }
 .drillhead h1 { font-size: clamp(20px, 2.6vw, 26px); }
 .drillgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
