@@ -134,7 +134,10 @@ BAND_SURGE = 0.60
 # data). Comtrade is authority for NO ONE → it's the global fallback everyone else outranks.
 SOURCE_AUTHORITY = {
     "census":   {842},          # US Census Bureau — US only
-    "eurostat": {m["reporter"] for m in MARKETS.values() if m.get("reporter") == 97},  # EU (add members later)
+    # Eurostat is authoritative for each EU27 MEMBER STATE (M49), reported individually — it overrides
+    # the Comtrade API for Germany, France, ... (matches sources/eurostat.EU27).
+    "eurostat": {40, 58, 100, 191, 196, 203, 208, 233, 246, 251, 276, 300, 348, 372, 380, 428, 440,
+                 442, 470, 528, 616, 620, 642, 703, 705, 724, 752},
     "hmrc":     {826},          # UK HMRC
     "estat":    {392},          # Japan e-Stat
     "kcs":      {410},          # Korea Customs
