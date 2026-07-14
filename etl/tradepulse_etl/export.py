@@ -262,9 +262,11 @@ def _slot(cur: dict, sig: dict | None, series: list, index: list[str]) -> dict:
     direction = _direction(yoy) if sig and band != "new" else None
     vals = {r["period"]: round(r["value_usd"]) for r in series}
     hist = [vals.get(p) for p in index]
+    est = cur.get("source") == "comtrade-mirror"      # rebuilt from partner reports, not self-reported
     return {"v": round(cur["value_usd"]), "p": cur["period"], "f": cur.get("freq"),
             "y": (round(yoy, 4) if yoy is not None else None), "b": band, "d": direction,
-            **({"h": hist} if any(v is not None for v in hist) else {})}
+            **({"h": hist} if any(v is not None for v in hist) else {}),
+            **({"m": 1} if est else {})}
 
 
 def _direction(yoy: float) -> str:

@@ -7,7 +7,7 @@ test_comtrade.py — offline test for the live-source helpers (no network).
 import unittest
 
 from tradepulse_etl.signals import prev_year_period
-from tradepulse_etl.sources.comtrade import ComtradeSource, _is_total_row, _is_world_total
+from tradepulse_etl.sources.comtrade import ComtradeMirrorSource, ComtradeSource, _is_total_row, _is_world_total
 
 
 class WorldTotalFilterTest(unittest.TestCase):
@@ -110,3 +110,44 @@ class BatchAnnualTest(unittest.TestCase):
         src.CODES_PER_CALL = 4
         src._pull_annual(["0101", "0102", "0103", "0104"])
         self.assertEqual([len(c) for c in self.calls], [4, 2, 2])   # capped -> split in halves
+
+
+class MirrorTest(unittest.TestCase):
+    """Mirror rebuilds a country's exports from its partners' import reports — for late/non-reporters."""
+
+    def _src(self, data_by_call):
+        src = ComtradeMirrorSource(key="k", pause=0)
+        self.calls = []
+        seq = list(data_by_call)
+
+        def fake_get(url, auth):
+            self.calls.append(url)
+            return seq.pop(0) if seq else []
+
+        src._get = fake_get
+        return src
+
+    def test_sums_partner_imports_into_exporter_rows(self):
+        # two reporters (DE, US) each import coffee FROM Vietnam(704) -> VN mirror export = sum
+        rows = [{"reporterCode": 276, "partnerCode": 704, "cmdCode": "0901", "flowCode": "M", "primaryValue": 100.0},
+                {"reporterCode": 842, "partnerCode": 704, "cmdCode": "0901", "flowCode": "M", "primaryValue": 250.0},
+                {"reporterCode": 842, "partnerCode": 0,   "cmdCode": "0901", "flowCode": "M", "primaryValue": 999.0}]  # World partner ignored
+        src = self._src([rows])
+        out = src._mirror_batch(["0901"], 2024)
+        vn = [r for r in out if r["reporterCode"] == 704]
+        self.assertEqual(len(vn), 1)
+        self.assertEqual(vn[0]["primaryValue"], 350.0)          # 100 + 250, World row excluded
+        self.assertEqual(vn[0]["flowCode"], "X")                # imports-from-VN => VN's EXPORT
+        self.assertEqual(vn[0]["partnerCode"], 0)               # stored as a World-partner export row
+        self.assertIsNone(vn[0]["publishedDate"])               # so direct reports win on freshness ties
+
+    def test_skips_the_thin_frontier_year(self):
+        # the most-recent year (current-1) is still too thin to trust; mirror starts at current-2
+        from datetime import date
+        src = ComtradeMirrorSource(key="k", pause=0)
+        seen = []
+        src._get = lambda url, auth: seen.append(url) or []
+        src.pull(["0901"], [], None)
+        blob = " ".join(seen)
+        self.assertNotIn(f"period={date.today().year - 1}", blob)   # frontier year skipped
+        self.assertIn(f"period={date.today().year - 2}", blob)      # well-covered year pulled

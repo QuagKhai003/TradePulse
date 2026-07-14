@@ -20,7 +20,7 @@ export default function GlobalFeed({ countries, flow, freq = "A", lang, t, hs, s
     if (!slot || !isFeedSignal(slot.band)) continue;
     items.push({ code: c.code, name_en: c.name_en, name_vi: c.name_vi, flow,
                  value_usd: slot.value_usd, yoy_delta: slot.yoy_delta, band: slot.band,
-                 direction: slot.direction, period: slot.period });
+                 direction: slot.direction, period: slot.period, estimated: slot.estimated });
   }
   // "none" is the state the app OPENS in: no re-sort at all — the feed keeps the snapshot's own order
   // (the ETL ships countries biggest-trader first), so nothing has been reordered behind the user's back.
@@ -51,7 +51,7 @@ export default function GlobalFeed({ countries, flow, freq = "A", lang, t, hs, s
                 <span className={`flowtag ${m.flow}`}>{flowLabel}</span>
                 <span className="feed-val">{fmtUSD(m.value_usd)}</span>
                 <span className="feed-band" style={{ color }}>{bandLabel(m.band, lang)}</span>
-                <span className="muted">{fmtPeriod(m.period, lang)}</span>
+                <span className="muted">{fmtPeriod(m.period, lang)}{m.estimated ? ` · ${t.est}` : ""}</span>
               </div>
             </li>
           );

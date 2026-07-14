@@ -19,6 +19,8 @@ import urllib.parse
 import urllib.request
 from datetime import date
 
+from .. import config
+
 DATA_ANNUAL = "https://comtradeapi.un.org/data/v1/get/C/A/HS"          # authenticated (free key)
 DATA_MONTHLY = "https://comtradeapi.un.org/data/v1/get/C/M/HS"        # authenticated (reserved)
 PREVIEW_ANNUAL = "https://comtradeapi.un.org/public/v1/preview/C/A/HS"  # keyless fallback
@@ -143,6 +145,43 @@ class ComtradeSource:
                 time.sleep(self.pause)
         return self._to_quarters(rows)
 
+    def pull_mirror(self, hs_codes: list[str], years: list[int]) -> list[dict]:
+        """MIRROR exports: for each (product, year), pull every reporter's imports from every partner
+        (one bilateral call), then sum by PARTNER — world imports FROM country E = E's exports as its
+        buyers saw them. This is how a late/non-reporter (Vietnam reports Comtrade ~2 years late) still
+        gets a recent figure. Emitted as flow 'X', partner=World, so it merges like a direct export row
+        but tagged source='comtrade-mirror' (lower priority -> only fills cells no direct source has).
+        One product per... no: batched CODES_PER_CALL at a time; a batch at the row cap splits in half."""
+        rows: list[dict] = []
+        for year in years:
+            for chunk in _chunks(hs_codes, self.CODES_PER_CALL):
+                rows += self._mirror_batch(chunk, year)
+        return rows
+
+    def _mirror_batch(self, codes: list[str], year: int) -> list[dict]:
+        params = {"cmdCode": ",".join(c for c in codes if c != "TOTAL"), "flowCode": "M",
+                  "period": year, **self.TOTALS_ONLY}          # all reporters, all partners (bilateral)
+        if not params["cmdCode"]:
+            return []
+        data = self._get(f"{DATA_ANNUAL}?{urllib.parse.urlencode(params)}", auth=True)
+        time.sleep(self.pause)
+        if len(data) >= self.ROW_CAP and len(codes) > 1:
+            mid = len(codes) // 2
+            return self._mirror_batch(codes[:mid], year) + self._mirror_batch(codes[mid:], year)
+        # sum imports by (product, exporter=partner); the exporter becomes the reporter of an export row
+        agg: dict[tuple, float] = {}
+        for r in data:
+            par = r.get("partnerCode")
+            if not par or int(par) == 0:                       # skip the World partner + self
+                continue
+            key = (int(par), str(r.get("cmdCode")), str(year))
+            agg[key] = agg.get(key, 0.0) + float(r.get("primaryValue") or 0)
+        return [
+            {"reporterCode": exp, "partnerCode": 0, "cmdCode": cmd, "period": per, "flowCode": "X",
+             "primaryValue": round(v, 2), "netWgt": None, "qtyUnitAbbr": None, "publishedDate": None}
+            for (exp, cmd, per), v in agg.items() if v > 0
+        ]
+
     # --- keyless: annual World-only, one call per reporter×year (tested fallback) ---
     def _pull_keyless(self, hs: str, reporters: list[int]) -> list[dict]:
         rows: list[dict] = []
@@ -225,3 +264,20 @@ class ComtradeSource:
     def _recent_years(n: int) -> list[int]:
         y = date.today().year
         return list(range(y - n, y))
+
+
+class ComtradeMirrorSource(ComtradeSource):
+    """Recent-year MIRROR exports (see ComtradeSource.pull_mirror). Batched, so run_multi hands it the
+    whole product chunk. Recent years only — history is already covered by BACI + direct Comtrade."""
+    name = "comtrade-mirror"
+    batched = True
+
+    def pull(self, hs_codes: list[str], reporters: list[int], partners: list[int] | None,
+             skip: frozenset = frozenset()) -> list[dict]:
+        if not self.key:
+            return []
+        # Fill only years partners have MOSTLY reported. The frontier year (current-1) is still thin
+        # (few partners in yet) -> its mirror total understates and fakes a collapse, so we skip it and
+        # start at current-2. A late self-reporter still gets ~1 year fresher than it self-reports.
+        years = [date.today().year - 1 - k for k in range(1, config.MIRROR_YEARS + 1)]
+        return self.pull_mirror(hs_codes, years)

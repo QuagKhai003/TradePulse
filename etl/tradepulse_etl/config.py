@@ -145,6 +145,10 @@ SOURCE_PRIORITY = {
     "census": 10, "eurostat": 10, "hmrc": 10, "estat": 10, "kcs": 10,
     "baci": 40,        # cleaned/reconciled global bulk — preferred over the raw Comtrade API
     "comtrade": 50,
+    # Mirror = a country's exports rebuilt from its PARTNERS' import reports. An ESTIMATE (importers
+    # report CIF, ~5-10% above the exporter's FOB), so it ranks BELOW every direct self-report and only
+    # ever wins a cell no direct source filled — i.e. recent years a country hasn't reported yet.
+    "comtrade-mirror": 55,
     "fixture": 99,
 }
 SOURCE_PRIORITY_DEFAULT = 90    # an unknown source ranks just above the fixture
@@ -165,6 +169,7 @@ def freq_of(period: str) -> str:
 # Trade data is revised for a while then frozen — so 2021 is fetched once, but recent periods keep
 # updating each run. Cuts a full re-pull down to a few recent periods after the first run. ---
 REVISION_YEARS = 2      # always re-pull the latest ~2 years (annual figures get revised that long)
+MIRROR_YEARS = 2        # rebuild the latest ~2 years from partner reports (fills late/non-reporters)
 REVISION_MONTHS = 6     # always re-pull the latest ~6 months (recent quarters get revised)
 
 

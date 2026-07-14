@@ -42,7 +42,11 @@ def get_source(kind: str, period: str | None = None, freqs: tuple[str, ...] = ("
         return UKHmrcSource()            # keyless (UK); GBP->USD via ECB FX
     if kind == "baci":
         return BaciSource()             # local bulk file (no API throttle); global history
-    raise ValueError(f"unknown source: {kind!r} (use fixture|comtrade|census|eurostat|hmrc|baci)")
+    if kind in ("mirror", "comtrade-mirror"):
+        from .settings import comtrade_key
+        from .sources.comtrade import ComtradeMirrorSource
+        return ComtradeMirrorSource(key=comtrade_key())   # recent exports rebuilt from partner reports
+    raise ValueError(f"unknown source: {kind!r} (use fixture|comtrade|mirror|census|eurostat|hmrc|baci)")
 
 
 def get_sources(kinds: list[str], freqs: tuple[str, ...] = ("A",)) -> list[TradeSource]:

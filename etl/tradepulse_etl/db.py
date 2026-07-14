@@ -145,6 +145,21 @@ def count_trade_flows(conn: sqlite3.Connection) -> int:
     return conn.execute("SELECT COUNT(*) FROM trade_flows").fetchone()[0]
 
 
+def fill_trade_flows(conn: sqlite3.Connection, rows: list[dict]) -> int:
+    """Insert ONLY where the cell is empty — ON CONFLICT DO NOTHING. Used for mirror estimates, which
+    are the lowest-priority source: they fill a country/period no direct report covered, and must never
+    overwrite a real self-reported figure. (Fast: the DB does the skip, no Python-side lookup set.)"""
+    sql = """
+        INSERT INTO trade_flows
+            (reporter, partner, hs6, period, freq, flow, value_usd, quantity, qty_unit, source, published_date)
+        VALUES
+            (:reporter, :partner, :hs6, :period, :freq, :flow, :value_usd, :quantity, :qty_unit, :source, :published_date)
+        ON CONFLICT(reporter, partner, hs6, period, flow) DO NOTHING
+    """
+    with conn:
+        cur = conn.executemany(sql, rows)
+    return len(rows)
+
 def fetch_flows(conn: sqlite3.Connection, flow: str | None = None) -> list[dict]:
     """All trade_flows rows (optionally one flow direction) as plain dicts."""
     sql = "SELECT * FROM trade_flows"

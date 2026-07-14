@@ -35,6 +35,7 @@ function FlowPanel({ title, slot, t: tr, lang }) {
           ? <span className="cband" style={{ color }}>{bandArrow(slot.band, slot.direction)} {bandLabel(slot.band, lang)} · {fmtPct(slot.yoy_delta)}</span>
           : <span className="muted">{tr.noSignal}</span>}
         <span className="muted"> · {fmtPeriod(slot.period, lang)}</span>
+        {slot.estimated && <span className="est-tag" title={tr.estTip}>{tr.est}</span>}
       </div>
       {hist.length > 1 && <div className="spark">
         {hist.map((h) => (
@@ -100,6 +101,7 @@ export default async function CountryPage({ params, searchParams }) {
   // The country's OWN latest period — not the snapshot-wide max, which reads as a lie next to figures
   // from an earlier year (the map's newest country can be a year ahead of this one).
   const asOf = [c.exp?.period, c.imp?.period].filter(Boolean).sort().pop() || snap.latest_period;
+  const asOfEst = (c.exp?.period === asOf && c.exp?.estimated) || (c.imp?.period === asOf && c.imp?.estimated);
 
   return (
     <main className="page">
@@ -118,7 +120,7 @@ export default async function CountryPage({ params, searchParams }) {
         <h1>{name} · {product}</h1>
         <div className="chips">
           <span className="chip hs">HS {snap.hs6}</span>
-          <span className="chip muted">{tr.asOf} {asOf}</span>
+          <span className="chip muted">{tr.asOf} {asOf}{asOfEst ? ` · ${tr.est}` : ""}</span>
         </div>
         <div className="actions">
           <WatchButton watchKey={`signal:${snap.hs6}:${c.code}`} meta={{ hs6: snap.hs6, market: String(c.code), kind: "signal" }}

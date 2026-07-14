@@ -30,6 +30,7 @@ function hydrateSlot(s, periods = {}) {
   const out = {
     value_usd: s.v, period: s.p, freq: s.f,
     yoy_delta: s.y ?? null, band: s.b, direction: s.d ?? null,
+    estimated: s.m === 1,   // value rebuilt from partner reports (a late/non-reporter), not self-reported
     history: (s.h || []).map((v, i) => (v == null ? null : { period: index[i], value_usd: v }))
                         .filter((x) => x && x.period),
   };

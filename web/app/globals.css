@@ -643,3 +643,7 @@ a.lockmask:hover { color: var(--accent); }
 .mdet-row dt { color: var(--muted); }
 .mdet-row dd { margin: 0; word-break: break-word; }
 .mdet-empty { font-size: 13px; text-align: center; padding: 40px 10px; }
+
+.est-tag { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; letter-spacing: .03em;
+  text-transform: uppercase; color: #b45309; background: rgba(245,158,11,.14); padding: 1px 6px;
+  border-radius: 5px; vertical-align: middle; cursor: help; }
