@@ -245,6 +245,58 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .qual-locked { text-align: center; padding: 22px; }
 .qual-lock { font-size: 26px; }
 
+/* ---- regulatory-change feed (events lane, ADR-0007): shown inside the qual panel ---- */
+.ev-feed { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.ev-h { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0; text-transform: none; letter-spacing: normal; }
+.ev-sub { margin: 2px 0 10px; }
+.ev-block { margin-top: 10px; }
+.ev-group { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; margin: 12px 0 4px; }
+.ev-count { font-weight: 500; }
+.ev-list { list-style: none; margin: 0; padding: 0; }
+.ev-row { display: flex; align-items: baseline; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.ev-date { flex: 0 0 74px; font-variant-numeric: tabular-nums; }
+.ev-area { flex: 0 0 auto; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: var(--pill); align-self: center; }
+.ev-tbt { background: var(--brand-tint); color: var(--brand-ink); }
+.ev-sps { background: #fff7ed; color: #9a3412; }
+.ev-oth { background: var(--line); color: var(--muted); }
+.ev-reject { background: var(--down-soft, #fee2e2); color: var(--down, #b91c1c); }
+.ev-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ev-title { font-weight: 600; color: var(--ink); }
+.ev-detail { color: var(--muted); }
+.ev-meta a { color: var(--brand); text-decoration: none; }
+.ev-deadline { color: var(--down); font-weight: 700; }
+.ev-hs { color: var(--up, #15803d); font-weight: 650; }
+.ev-kw { color: var(--muted); }
+
+/* ---- foundation informed-list (baseline things to know) ---- */
+.fnd { margin-top: 6px; }
+.fnd-h { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0; text-transform: none; letter-spacing: normal; }
+.fnd-tag { font-weight: 500; font-style: italic; }
+.fnd-note { margin: 3px 0 10px; }
+.fnd-list { list-style: none; margin: 0; padding: 0; }
+.fnd-item { display: grid; gap: 1px 10px; padding: 8px 0; border-top: 1px solid var(--line);
+  grid-template-columns: 1fr auto; align-items: baseline; }
+.fnd-label { font-weight: 650; color: var(--ink); }
+.fnd-desc { grid-column: 1 / -1; }
+.fnd-src { grid-row: 1; grid-column: 2; color: var(--brand); text-decoration: none; white-space: nowrap; }
+
+/* ---- forward lane: world price trend (ADR-0007) ---- */
+.fwd h2 { text-transform: none; letter-spacing: normal; font-size: 15px; color: var(--ink); font-weight: 700; }
+.fwd-row { display: flex; align-items: center; gap: 16px; margin: 8px 0 4px; }
+.fwd-yoy { white-space: nowrap; }
+.fwd-arrow { font-size: 15px; }
+.fwd-pct { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fwd-spark { flex: 1 1 auto; height: 34px; min-width: 0; }
+.fwd-spark polyline { stroke: currentColor; }
+.fwd-spark circle { fill: currentColor; }
+.fwd-up { color: var(--up, #15803d); }
+.fwd-down { color: var(--down, #b91c1c); }
+.fwd-flat { color: var(--muted); }
+.fwd-up .fwd-pct, .fwd-down .fwd-pct, .fwd-flat .fwd-pct { color: inherit; }
+.fwd h2, .fwd-meta { color: var(--ink); }        /* keep header/meta neutral, not the trend colour */
+.fwd-meta { color: var(--muted); }
+.fwd-meta a { color: var(--brand); text-decoration: none; }
+
 /* ============ requirements ============ */
 .reqcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(264px, 1fr)); gap: 12px; }
 .reqcard { display: block; text-decoration: none; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; box-shadow: var(--shadow-sm); transition: transform .12s var(--ease), border-color .12s var(--ease); }

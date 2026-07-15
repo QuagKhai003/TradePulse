@@ -12,8 +12,10 @@ import WatchButton from "../../components/WatchButton.js";
 import PartnerTable from "../../components/PartnerTable.js";
 import SourcingChart from "../../components/SourcingChart.js";
 import QualPanel from "../../components/QualPanel.js";
+import PricePanel from "../../components/PricePanel.js";
 import MarketFeed from "../../components/MarketFeed.js";
 import { loadSnapshot } from "../../lib/snapshot.js";
+import { loadForward } from "../../lib/forward.js";
 import { loadSourcing } from "../../lib/sourcing.js";
 import { loadAwards, loadCpvMatch, loadSellers, loadTenders } from "../../lib/tenders.js";
 import { FREE_PROFILE_LIMIT } from "../../lib/companies.js";
@@ -115,6 +117,8 @@ export default async function CountryPage({ params, searchParams }) {
   // from an earlier year (the map's newest country can be a year ahead of this one).
   const asOf = [c.exp?.period, c.imp?.period].filter(Boolean).sort().pop() || snap.latest_period;
   const asOfEst = (c.exp?.period === asOf && c.exp?.estimated) || (c.imp?.period === asOf && c.imp?.estimated);
+  // FORWARD lane (ADR-0007): the world price trend (same for every country — it's a global price).
+  const forward = await loadForward(hs);
 
   return (
     <main className="page">
@@ -150,6 +154,9 @@ export default async function CountryPage({ params, searchParams }) {
         <FlowPanel title={tr.exportsLabel} slot={c.exp} t={tr} lang={lang} />
         <FlowPanel title={tr.importsLabel} slot={c.imp} t={tr} lang={lang} />
       </section>
+
+      <PricePanel forward={forward} lang={lang} t={tr} />
+
 
       {/* who buys, who sells, and what has already been sold — for THIS product in THIS country.
           Buyers here come first, then the rest of the market: a Vietnamese exporter looking at Japan
