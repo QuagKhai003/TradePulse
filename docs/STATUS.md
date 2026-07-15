@@ -53,6 +53,27 @@ never re-fetched) + per-product persistence. `freq` (A/Q/M) + Nam/Quy toggle acr
   Free tier opens the first few; the rest blur behind a server-side gate. Counts stay honest.
 - Globe = signals only. "All products" rolls every product up (deduped: 2,687 unique open tenders).
 
+**IN FLIGHT — branch `feat/forward-qualification-lanes` (stacked on tender-feed; NOT merged).** A NEW
+data TYPE beyond customs stats (ADR-0007), from a live-verified scout of ~50 hidden/undocumented public
+endpoints. Three lanes now live, each SEPARATE from the deterministic signal (never merged):
+- **Qualification / EVENTS lane:** WTO ePing SPS/TBT rule-changes (HS-tagged, forward-looking, covers wood)
+  + EU RASFF border-rejections (`kind='rejection'`, **29 Vietnam-origin** warnings). Rendered in the
+  qualification panel as two blocks — "Rule changes" + "Border rejections", this market first.
+- **FORWARD lane:** IMF PCPS world price trend (keyless) — a demand-pressure cue beside the flow chart.
+  Coffee robusta ▼13.7%, rice ▲3.7% (June 2026). Honest coverage: no pellet/cashew price → no line.
+- **Qualification FOUNDATION informed-list:** baseline things to know (invoice, origin, phyto/health cert,
+  destination limits, EUDR for EU wood) by product×market, each citing an official portal (Access2Markets
+  etc.). Framed "general guidance · not a guarantee". EU-27 member pages resolve to the EU portal.
+- **Change-alerts:** a SIGNAL watch (`signal:<hs>:<country>`) now also fires when that market's rules move
+  or a rejection lands (new events only; matched by HS-family + market).
+- **Thailand + India fresh national primaries:** refresh their own cells (Thailand 764 → 2026 coffee Q2
+  imports $30M; India 699 → FY24-25 rice exports $12.47B). Each is its own authority; NOT used for VN's
+  world total (a subset of buyers would understate it — a wrong number we will not show).
+All keyless, deterministic, Golden-Rule clean. **+43 tests (129 offline green).**
+**Deferred (each its own focused pass):** best-source-per-lane VN-mirror refactor (to blend fresh national
+partners into VN's world total WITHOUT understating it); USDA PSD forecast (FAS rejects valid api.data.gov
+keys, server-side).
+
 **DATA IS CURRENT.** All **1,240 products now reach 2025** (they were frozen at 2023 — BACI's bulk
 history ends there and the Comtrade API had only ever covered 13 products before its quota throttled).
 Fixing it exposed two bugs: `run_multi` called Comtrade one product per call, so the cmdCode batching

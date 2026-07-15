@@ -57,6 +57,8 @@ data/*.sqlite
 web/public/data/snapshot*.json
 web/public/data/sourcing*.json
 web/public/data/tenders-*.json
+web/public/data/events-*.json
+web/public/data/forward-*.json
 # locked-page telemetry + watches + alerts (raw capture logs)
 data/locked_clicks.ndjson
 data/watches.ndjson
