@@ -29,24 +29,49 @@ def _stem(cpv: str) -> str:
     return cpv.rstrip("0") or cpv
 
 
+# CPV-family schemes. Ukraine's ДК021 and Moldova's CPV are literal CPV codes, so they reuse our CPV
+# crosswalk. (UNSPSC feeds — AU/CL/DO — carry a different code space and need a UNSPSC->HS crosswalk.)
+_CPV_SCHEMES = ("CPV", "ДК021", "")
+
+
 def _cpvs(rel: dict) -> set[str]:
-    """Every CPV code on a release: the tender's main classification, its additional ones, and each
-    item's. Only scheme CPV (or unschemed, which UK/EU feeds use for CPV)."""
+    """Every CPV-family code on a release — the tender's classification + additionals + each item's, at
+    both tender and (for feeds like AusTender) contract level."""
     out: set[str] = set()
-    t = rel.get("tender") or {}
 
     def add(c):
-        if isinstance(c, dict) and c.get("id") and (c.get("scheme") or "CPV").upper() in ("CPV", ""):
-            out.add(str(c["id"]))
+        if isinstance(c, dict) and c.get("id") and (c.get("scheme") or "").upper().replace("-", "") in \
+                [s.upper().replace("-", "") for s in _CPV_SCHEMES]:
+            out.add(str(c["id"]).split("-")[0])          # ДК021 codes carry a '-check' suffix; drop it
 
-    add(t.get("classification"))
-    for c in (t.get("additionalClassifications") or []):
-        add(c)
-    for it in (t.get("items") or []):
-        add(it.get("classification"))
-        for c in (it.get("additionalClassifications") or []):
-            add(c)
+    def scan(container):
+        c = container or {}
+        add(c.get("classification"))
+        for x in (c.get("additionalClassifications") or []):
+            add(x)
+        for it in (c.get("items") or []):
+            add(it.get("classification"))
+            for x in (it.get("additionalClassifications") or []):
+                add(x)
+
+    scan(rel.get("tender"))
+    for con in (rel.get("contracts") or []):
+        scan(con)
     return out
+
+
+def _buyer_name(rel: dict) -> str | None:
+    """Buyer org: top-level buyer, else tender.procuringEntity, else a party with a buyer role — the
+    layouts the different national OCDS feeds actually use."""
+    for cand in ((rel.get("buyer") or {}).get("name"),
+                 ((rel.get("tender") or {}).get("procuringEntity") or {}).get("name")):
+        if cand:
+            return cand.strip()
+    for p in (rel.get("parties") or []):
+        roles = [r.lower() for r in (p.get("roles") or [])]
+        if ("buyer" in roles or "procuringentity" in roles) and p.get("name"):
+            return p["name"].strip()
+    return None
 
 
 def match_hs(cpvs: set[str], cpv_by_hs: dict[str, list[str]]) -> set[str]:
@@ -61,9 +86,22 @@ def match_hs(cpvs: set[str], cpv_by_hs: dict[str, list[str]]) -> set[str]:
     return hits
 
 
-def _notice_url(rel: dict) -> str | None:
-    m = _NOTICE_RE.search(json.dumps(rel))
-    return m.group(0) if m else None
+def _source_url(rel: dict) -> str | None:
+    """An openable link for the notice: a /notice/ URL, else a tender document/URL, else any http URL —
+    different national feeds expose it differently. None -> the row is dropped (Golden Rule: cite source)."""
+    blob = json.dumps(rel)
+    m = _NOTICE_RE.search(blob)
+    if m:
+        return m.group(0)
+    t = rel.get("tender") or {}
+    for d in (t.get("documents") or []):
+        if d.get("url"):
+            return d["url"]
+    for k in ("url", "urlTender"):
+        if t.get(k):
+            return t[k]
+    m2 = re.search(r'https?://[^\"\s]{14,}', blob)
+    return m2.group(0) if m2 else None
 
 
 def parse_release(rel: dict, iso3: str, source: str, cpv_by_hs: dict[str, list[str]],
@@ -73,14 +111,12 @@ def parse_release(rel: dict, iso3: str, source: str, cpv_by_hs: dict[str, list[s
     if not hits:
         return [], []
     t = rel.get("tender") or {}
-    buyer = (rel.get("buyer") or {}).get("name")
+    buyer = _buyer_name(rel)
     title = (t.get("title") or "").strip()
-    if not (buyer and title):
+    url = _source_url(rel)
+    if not (buyer and title and url):
         return [], []
     oid = str(rel.get("ocid") or rel.get("id") or "")
-    url = _notice_url(rel)
-    if not url:
-        return [], []                                   # no openable link -> drop (Golden Rule: cite source)
     pub = (rel.get("date") or "")[:10] or None
     deadline = ((t.get("tenderPeriod") or {}).get("endDate") or "")[:10] or None
     cpv = next(iter(_cpvs(rel)), "")
