@@ -100,7 +100,7 @@ def main() -> None:
         # annual table rows for EVERY product (+ the curated HS6 pilots + the all-commodities TOTAL)
         hs6_extra = [h for h in SOURCING_HS if len(h) == 6]
         a_by_hs: dict[str, list] = defaultdict(list)
-        for r in BaciSource().pull_sourcing(FOCUS_REPORTERS, hs6_extra=hs6_extra, include_total=True):
+        for r in BaciSource().pull_sourcing(None, hs6_extra=hs6_extra, include_total=True):   # ALL reporters
             a_by_hs[str(r["cmdCode"])].append(r)
 
         written = 0
