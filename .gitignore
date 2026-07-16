@@ -87,3 +87,7 @@ web/public/data/countries.json
 
 # one-off ETL scripts dropped in data/
 data/*.py
+
+# scratch / one-off research artifacts (not source)
+etl/_*.json
+*.log
