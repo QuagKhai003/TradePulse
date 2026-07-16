@@ -170,6 +170,12 @@ def main() -> None:
             ua_tn, ua_aw = ProzorroSource(max_details=400).pull(TENDER_CPV, us_since, now_iso)
             upsert_tenders(conn, ua_tn)
             upsert_awards(conn, ua_aw)
+            # Moldova (MTender): list-then-fetch, CPV in records[0].compiledRelease -> reuses crosswalk. MDA.
+            from .sources.mtender import MtenderSource
+            md_since = (today - timedelta(days=60)).isoformat()
+            md_tn, md_aw = MtenderSource(max_details=400).pull(TENDER_CPV, md_since, now_iso)
+            upsert_tenders(conn, md_tn)
+            upsert_awards(conn, md_aw)
         # SELLERS = real exporters from approval registries (ADR-0006), NOT award winners. Pulled from
         # DG SANTE (keyless; animal-origin -> seafood + honey among our products). A won contract is a
         # PAST ORDER, so sellers must come from a different source or the two tabs are the same data.
