@@ -71,10 +71,8 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
         </div>
       </header>
 
-      {noCoverage ? (
-        <p className="mfeed-empty muted">{t.noCpvNote}</p>
-      ) : rows.length === 0 ? (
-        <p className="mfeed-empty muted">{emptyLine(tab, product, country, t)}</p>
+      {noCoverage || rows.length === 0 ? (
+        <p className="mfeed-empty muted">{t.noDataYet}</p>
       ) : (
         <div className="mfeed-body">
           <div className="mfeed-list">

@@ -176,6 +176,11 @@ def main() -> None:
             md_tn, md_aw = MtenderSource(max_details=400).pull(TENDER_CPV, md_since, now_iso)
             upsert_tenders(conn, md_tn)
             upsert_awards(conn, md_aw)
+            # Australia (AusTender): inline OCDS contract releases, UNSPSC -> approximate HS crosswalk. AUS.
+            from .sources.austender import AusTenderSource
+            au_tn, au_aw = AusTenderSource(max_pages=30).pull(TENDER_CPV, us_since, now_iso)
+            upsert_tenders(conn, au_tn)
+            upsert_awards(conn, au_aw)
         # SELLERS = real exporters from approval registries (ADR-0006), NOT award winners. Pulled from
         # DG SANTE (keyless; animal-origin -> seafood + honey among our products). A won contract is a
         # PAST ORDER, so sellers must come from a different source or the two tabs are the same data.

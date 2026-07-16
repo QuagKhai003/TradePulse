@@ -20,8 +20,31 @@ import re
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 _NOTICE_RE = re.compile(r"https?://[^\"\s]+/[Nn]otice/[0-9A-Za-z._%-]+")
+
+# UNSPSC->HS crosswalk (reference/unspsc_hs.json) — built by matching UNSPSC commodity titles to our HS
+# catalog. APPROXIMATE (no free deterministic UNSPSC<->HS mapping exists), so AU/CL/DO product tags are
+# best-effort, not exact. Empty dict if the file is absent (feed then matches CPV only).
+try:
+    _UNSPSC = json.loads((Path(__file__).resolve().parents[1] / "reference" / "unspsc_hs.json").read_text(encoding="utf-8"))
+except Exception:  # noqa: BLE001
+    _UNSPSC = {}
+
+
+def _unspsc_hits(rel: dict) -> set[str]:
+    """HS products matched via a release's UNSPSC item codes (exact 8-digit -> class -> family lookup)."""
+    hits: set[str] = set()
+    for cont in [rel.get("tender")] + (rel.get("contracts") or []):
+        for it in ((cont or {}).get("items") or []):
+            cl = it.get("classification") or {}
+            code = str(cl.get("id") or "")
+            if (cl.get("scheme") or "").upper() == "UNSPSC" and code:
+                hs = _UNSPSC.get(code) or _UNSPSC.get(code[:6] + "00") or _UNSPSC.get(code[:4] + "0000")
+                if hs:
+                    hits.add(hs)
+    return hits
 
 
 def _stem(cpv: str) -> str:
@@ -107,12 +130,16 @@ def _source_url(rel: dict) -> str | None:
 def parse_release(rel: dict, iso3: str, source: str, cpv_by_hs: dict[str, list[str]],
                   scraped_at: str) -> tuple[list[dict], list[dict]]:
     """One OCDS release -> (tender rows, award rows) for every product it matches. Empty if no match."""
-    hits = match_hs(_cpvs(rel), cpv_by_hs)
+    hits = match_hs(_cpvs(rel), cpv_by_hs) | _unspsc_hits(rel)
     if not hits:
         return [], []
     t = rel.get("tender") or {}
+    contracts = rel.get("contracts") or []
     buyer = _buyer_name(rel)
-    title = (t.get("title") or "").strip()
+    # title: tender -> contract -> first item description (feeds like AusTender are contract-only)
+    title = (t.get("title") or (contracts[0].get("title") if contracts else "")
+             or next((it.get("description") for c in [t, *contracts] for it in (c.get("items") or [])
+                      if it.get("description")), "")).strip()[:160]
     url = _source_url(rel)
     if not (buyer and title and url):
         return [], []
@@ -125,9 +152,10 @@ def parse_release(rel: dict, iso3: str, source: str, cpv_by_hs: dict[str, list[s
         base = {"id": oid, "hs6": hs, "source": source, "cpv": cpv, "match_kind": "contract",
                 "title": title, "buyer": buyer, "buyer_country": iso3, "url": url, "scraped_at": scraped_at}
         tenders.append({**base, "published": pub, "deadline": deadline})
-        for a in (rel.get("awards") or []):
+        # awards + contracts both name a supplier (the seller) — AusTender uses contracts[]
+        for a in (rel.get("awards") or []) + contracts:
             val = a.get("value") or {}
-            adate = (a.get("date") or "")[:10] or None
+            adate = (a.get("date") or a.get("dateSigned") or "")[:10] or None
             for s in (a.get("suppliers") or []):
                 name = (s.get("name") or "").strip()
                 if name:
