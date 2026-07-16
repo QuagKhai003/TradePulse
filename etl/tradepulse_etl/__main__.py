@@ -187,6 +187,11 @@ def main() -> None:
             cl_tn, cl_aw = ChileCompraSource(max_details=200).pull(TENDER_CPV, cl_since, now_iso)
             upsert_tenders(conn, cl_tn)
             upsert_awards(conn, cl_aw)
+            # Dominican Republic (DGCP): list-then-fetch, UNSPSC -> approximate HS crosswalk. DOM.
+            from .sources.dgcp import DgcpSource
+            do_tn, do_aw = DgcpSource(max_details=300).pull(TENDER_CPV, us_since, today.isoformat(), now_iso)
+            upsert_tenders(conn, do_tn)
+            upsert_awards(conn, do_aw)
         # SELLERS = real exporters from approval registries (ADR-0006), NOT award winners. Pulled from
         # DG SANTE (keyless; animal-origin -> seafood + honey among our products). A won contract is a
         # PAST ORDER, so sellers must come from a different source or the two tabs are the same data.
