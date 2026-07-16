@@ -111,9 +111,3 @@ web/             Next.js frontend + API (App Router)
 content/         Layer-3 qualification pages + company profiles (markdown/JSON, one concept per file)
 trade-signal-terminal-plan.md   Full product vision (source of truth for scope)
 ```
-
----
-
-## About
-
-See [`ABOUT.md`](ABOUT.md) for the story behind the project — the insight, the positioning, and why "inform, never match" is the whole thing.

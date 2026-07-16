@@ -8,7 +8,7 @@
  * @limits   Server-only (node:fs). Returns null when the file is missing (page tells the user to run ETL).
  * @affects  Consumed by app/page.js + country/[code]. Contract in docs/DATA_MODEL.md.
  */
-import { access } from "node:fs/promises";
+import { access, stat } from "node:fs/promises";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -70,17 +70,30 @@ function hydrateSlot(s, periods = {}) {
   return out;
 }
 
+// Hydration expands the slim 93KB snapshot into a ~400KB shape (241 countries, history + by_freq),
+// and BOTH the landing (serializes it into the client Flight payload) and every country page call this.
+// Redoing that per request was the biggest per-nav cost, so cache the HYDRATED result keyed by the
+// snapshot file's mtime — an ETL rewrite bumps mtime and re-hydrates. Returns a SHARED object; callers
+// read it (page -> HeroClient serialize, country -> countries.find), never mutate it.
+const hydratedCache = new Map();   // snapshot filename -> { mtimeMs, snap }
+
 // hs -> per-product snapshot (snapshot-<hs>.json); no hs -> the landing default (snapshot.json).
 export async function loadSnapshot(hs) {
   await ensureProduct(hs);   // build this product's files on first open (from the stored DB), then read
-  const snap = await readJson(hs ? `snapshot-${hs}.json` : "snapshot.json");
+  const file = hs ? `snapshot-${hs}.json` : "snapshot.json";
+  let mtimeMs;
+  try { mtimeMs = (await stat(dataPath(file))).mtimeMs; } catch { return null; }
+  const hit = hydratedCache.get(file);
+  if (hit && hit.mtimeMs === mtimeMs) return hit.snap;
+
+  const snap = await readJson(file);
   if (!snap) return null;
   const names = (await readJson("countries.json")) || {};
   const nm = (code) => names[String(code)] || {};
 
   // `snap` is the SHARED cached parse (jsoncache) — build a NEW object rather than mutating it, or the
   // next read would get already-hydrated countries and re-hydrate garbage.
-  return {
+  const out = {
     ...snap,
     countries: (snap.countries || []).map((c) => ({
       code: c.c,
@@ -91,4 +104,6 @@ export async function loadSnapshot(hs) {
     })),
     feed: [],   // the feed is derived from countries at the chosen grain (GlobalFeed)
   };
+  hydratedCache.set(file, { mtimeMs, snap: out });
+  return out;
 }
