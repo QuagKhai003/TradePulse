@@ -9,12 +9,20 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+// TED sits behind AWS WAF (bots get a 202 challenge; a real browser passes) + blocks framing, so we
+// can't proxy/embed the PDF. But the browser CAN open it: the .../pdf URL renders inline in the browser's
+// own PDF viewer. Rewrite the stored .../html link (which browsers download) to .../pdf (inline view).
+function tedFix(list) {
+  return list.map((x) => (x && typeof x.url === "string"
+    ? { ...x, url: x.url.replace(/\/html$/, "/pdf") } : x));
+}
+
 export async function loadTenders(hs) {
   if (!hs) return [];
   const p = path.join(process.cwd(), "public", "data", `tenders-${hs}.json`);
   try {
     const list = JSON.parse(await readFile(p, "utf-8"));
-    return Array.isArray(list) ? list : [];
+    return Array.isArray(list) ? tedFix(list) : [];
   } catch {
     return [];
   }
@@ -36,7 +44,7 @@ async function loadList(hs, kind) {
   const p = path.join(process.cwd(), "public", "data", `${kind}-${hs}.json`);
   try {
     const list = JSON.parse(await readFile(p, "utf-8"));
-    return Array.isArray(list) ? list : [];
+    return Array.isArray(list) ? tedFix(list) : [];
   } catch {
     return [];
   }

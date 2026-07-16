@@ -14,6 +14,8 @@ from tradepulse_etl.export import build_events
 from tradepulse_etl.sources.eping import EpingSource, _text
 
 # A recent SPS notification WITH a structured HS tag (matches shrimp 0306), from a pilot market (Korea).
+# Real items carry the OFFICIAL WTO document links — the notified attachment (a direct PDF) and the WTO
+# notification document — which we link instead of ePing's un-deep-linkable viewData modal.
 ITEM_HS = {
     "id": 118548, "area": "SPS", "distributionDate": "2026-07-02T00:00:00+00:00",
     "commentDeadlineDate": "2026-09-01T00:00:00+00:00",
@@ -22,6 +24,8 @@ ITEM_HS = {
     "description": "<p>New maximum residue limits for antibiotics in imported frozen shrimps and prawns.</p>",
     "productsFreeText": "<p>Frozen shrimps and prawns</p>",
     "hsCodes": [{"id": 44595, "code": "030617", "name": "030617 - Frozen shrimps and prawns"}],
+    "notifiedDocumentLink": "https://members.wto.org/crnattachments/2026/SPS/KOR/26_0001_00_e.pdf",
+    "linkToNotification": "https://docs.wto.org/imrd/directdoc.asp?DDFDocuments/T/G/SPS/NKOR1.DOCX",
 }
 # An older TBT notification WITHOUT an HS tag, from a non-pilot member (keyword match only).
 ITEM_KW = {
@@ -42,8 +46,23 @@ class RowTest(unittest.TestCase):
         self.assertEqual(r["area"], "SPS")
         self.assertEqual(r["event_date"], "2026-07-02")
         self.assertEqual(r["deadline"], "2026-09-01")       # forward-looking comment deadline
-        self.assertIn("viewData=118548", r["source_url"])   # citable official source
+        # official notified attachment (a real PDF) — NOT ePing's blank viewData modal
+        self.assertEqual(r["source_url"], "https://members.wto.org/crnattachments/2026/SPS/KOR/26_0001_00_e.pdf")
         self.assertNotIn("<", r["title"])                   # HTML stripped
+
+    def test_falls_back_to_notification_doc_then_symbol_search(self):
+        # no notified attachment -> the WTO notification document itself
+        it = {k: v for k, v in ITEM_HS.items() if k != "notifiedDocumentLink"}
+        self.assertTrue(EpingSource._row(it, "0306", "d")["source_url"].startswith("https://docs.wto.org/"))
+        # neither official doc -> ePing search on the notice's own document symbol (not a blank modal)
+        it = {k: v for k, v in it.items() if k != "linkToNotification"}
+        url = EpingSource._row(it, "0306", "d")["source_url"]
+        self.assertIn("epingalert.org", url)
+        self.assertIn("freeText=G/SPS/N/KOR/1", url)        # searches the notice's own document symbol
+
+    def test_comma_joined_doc_link_takes_first_url(self):
+        it = {**ITEM_HS, "notifiedDocumentLink": "https://a.wto.org/x.pdf,https://b.wto.org/y.pdf"}
+        self.assertEqual(EpingSource._row(it, "0306", "d")["source_url"], "https://a.wto.org/x.pdf")
 
     def test_no_hs_tag_falls_back_to_keyword_confidence(self):
         r = EpingSource._row(ITEM_KW, "1006", "2026-07-15")

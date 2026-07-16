@@ -30,6 +30,7 @@
   --brand: #4f46e5;          /* indigo — links, active, focus (NOT a signal colour) */
   --brand-ink: #3730a3;
   --brand-tint: #eef0ff;
+  --accent: #4f46e5;         /* = brand; was referenced but never defined (broke buttons/tab underline) */
 
   --up: #15803d;   --up-soft: #dcfce7;   --up-line: #86efac;
   --down: #b91c1c; --down-soft: #fee2e2; --down-line: #fca5a5;
@@ -69,6 +70,7 @@ h2 { font-family: var(--display); font-size: var(--fs-2xs); font-weight: 600; te
 a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
   outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px;
 }
+.search-input:focus-visible { border-radius: var(--pill); }   /* keep the pill shape on focus, not a box */
 
 .page { max-width: 1240px; margin: 0 auto; padding: 20px clamp(16px, 3vw, 28px) 48px; }
 
@@ -185,9 +187,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 
 /* ============ drill / panels ============ */
 /* prominent 'back to map' link — bigger + bold + brand colour, but NOT a pill button */
-.back { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px;
+.back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px;
   font-size: 16px; font-weight: 700; color: var(--brand); text-decoration: none; }
-.back:hover { color: var(--brand-ink); text-decoration: underline; text-underline-offset: 3px; }
+/* arrow as a masked SVG (not a font glyph) so align-items:center puts it at the text's true middle */
+.back::before {
+  content: ""; flex: none; width: 15px; height: 15px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5M12 19l-7-7 7-7'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5M12 19l-7-7 7-7'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.back:hover { color: var(--brand-ink); }   /* no underline */
 .drillhead { margin-bottom: 18px; }
 .drillhead h1 { font-size: clamp(20px, 2.6vw, 26px); }
 .drillgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
@@ -215,10 +223,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .watchbtn.on { background: #fffbeb; border-color: #fcd34d; color: #b45309; }
 
 /* sparkline */
-.spark { display: flex; align-items: flex-end; gap: 10px; height: 120px; margin-top: auto; padding-top: 8px; }
+.spark { display: flex; align-items: flex-end; gap: 10px; height: 150px; margin-top: auto; padding-top: 8px; }
 .spark-bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
 .spark-bar > div { width: 100%; max-width: 34px; border-radius: 4px 4px 0 0; min-height: 3px; opacity: .85; }
 .spark-x { font-size: 9px; margin-top: 5px; white-space: nowrap; color: var(--muted); }
+/* per-year value, sitting on top of each bar (bars scaled to 82% to leave the headroom) */
+.spark-val { font-size: 9.5px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); margin-bottom: 3px; white-space: nowrap; }
 
 /* sourcing chart */
 .chart-svg { width: 100%; height: auto; display: block; }
@@ -249,9 +259,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .ev-feed { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
 .ev-h { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0; text-transform: none; letter-spacing: normal; }
 .ev-sub { margin: 2px 0 10px; }
-.ev-block { margin-top: 10px; }
-.ev-group { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; margin: 12px 0 4px; }
-.ev-count { font-weight: 500; }
+.ev-block { margin-top: 18px; }
+.ev-group { font-weight: 700; margin: 4px 0 2px; }
+.ev-count { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--muted);
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; vertical-align: middle; }
+.ev-blocksub { margin: 0 0 8px; }
 .ev-list { list-style: none; margin: 0; padding: 0; }
 .ev-row { display: flex; align-items: baseline; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
 .ev-date { flex: 0 0 74px; font-variant-numeric: tabular-nums; }
@@ -282,11 +294,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 
 /* ---- forward lane: world price trend (ADR-0007) ---- */
 .fwd h2 { text-transform: none; letter-spacing: normal; font-size: 15px; color: var(--ink); font-weight: 700; }
-.fwd-row { display: flex; align-items: center; gap: 16px; margin: 8px 0 4px; }
-.fwd-yoy { white-space: nowrap; }
-.fwd-arrow { font-size: 15px; }
-.fwd-pct { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.fwd-spark { flex: 1 1 auto; height: 34px; min-width: 0; }
+.fwd .fwd-big { color: inherit; margin: 2px 0 0; }        /* YoY as the hero number, direction-coloured */
+.fwd-unit { font-size: 14px; font-weight: 600; color: var(--muted); }
+.fwd-spark { display: block; width: 100%; height: 58px; margin: 10px 0 8px; }
+.fwd-area { fill: currentColor; opacity: .13; stroke: none; }
 .fwd-spark polyline { stroke: currentColor; }
 .fwd-spark circle { fill: currentColor; }
 .fwd-up { color: var(--up, #15803d); }
@@ -369,7 +380,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .empty { padding: 48px; text-align: center; color: var(--muted); font-family: var(--mono); }
 
 /* ============ 3D globe hero (immersive dark) ============ */
-.home { height: 100vh; overflow: hidden; }
+/* The globe home is dark space; the shared body is light (for content pages). Paint the body dark
+   WHILE the home is shown (and kill overscroll rubber-band) so a scroll/bounce reveals the same space,
+   never the light body behind it. Scoped with :has() so country/requirement pages stay light. */
+body:has(.home) { background: #05070f; }
+body:has(.home), html:has(.home) { overscroll-behavior: none; }
+.home { height: 100vh; overflow: hidden; background: #05070f; }
 .hero {
   position: relative; overflow: hidden; color: #e7ecf5; height: 100vh;
   background:
@@ -471,6 +487,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .panel-h h2 { margin: 0; color: #9fb0d0; white-space: nowrap; font-size: var(--fs-2xs); letter-spacing: .06em; }
 .panel-h-tools { display: flex; align-items: center; gap: 8px; }
 .panel-h .feed-count { background: rgba(124,142,196,.16); color: #b6c4de; margin-left: 6px; }
+/* the period the ranking is FOR (annual "2025" or the latest quarter) — a small tag by the title */
+.tc-period { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .03em; color: #b6c4de;
+  background: rgba(124,142,196,.16); padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  font-variant-numeric: tabular-nums; }
 .panel-h .flowbar { padding: 3px; margin: 0; flex: none; }
 .panel-h .flowbtn { padding: 0 13px; min-height: 30px; font-size: var(--fs-xs); white-space: nowrap; }
 .scrollx { overflow: auto; scrollbar-width: none; -ms-overflow-style: none; }
@@ -668,7 +688,8 @@ a.lockmask:hover { color: var(--accent); }
 @media (max-width: 900px) { .mfeed-body { grid-template-columns: 1fr; } }
 
 .mfeed-list ul { list-style: none; margin: 0; padding: 0; max-height: 460px; overflow-y: auto; }
-.mfeed-list li + li { border-top: 1px solid var(--line); }
+.mfeed-list li:not(.mrow-fill) + li:not(.mrow-fill) { border-top: 1px solid var(--line); }
+.mrow-fill { pointer-events: none; }   /* height-holding blank rows on the short last page */
 .mrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
   text-align: left; background: none; border: 0; cursor: pointer; font: inherit; color: inherit;
   padding: 11px 12px; border-radius: var(--r); text-decoration: none; }
@@ -724,3 +745,192 @@ a.lockmask:hover { color: var(--accent); }
 @media (max-width: 720px) { .topbar-country { grid-template-columns: 1fr; } .topbar-country .hero-search-top { justify-self: stretch; } }
 .seg-opt.disabled { opacity: .4; cursor: not-allowed; }
 .seg-opt.disabled:hover { color: #c6d2ec; }
+
+/* ============ country page — soft dark-blue space, clean white cards ============
+   Background is a SOFT dark blue (the globe world), not near-black — so white cards don't fight it.
+   Content lives in clean cards that lift gently: ONE layer, no box-in-a-box, no hard edges. Headings
+   are sentence case (no shouting caps, fewer eyebrows). Header/title text sits light on the space. */
+.cpage {
+  min-height: 100vh;
+  --muted: #57657f;                                    /* a touch darker -> readable secondary on white */
+  background: transparent;                             /* the space lives on the BODY, not this column */
+}
+/* the soft dark-blue space is the PAGE's own base layer — full viewport, edge to edge, fixed under
+   everything. Putting it here (not on the centered column) removes the seam that read as a pasted page. */
+html:has(.cpage) { background: #2b3d63; overscroll-behavior: none; }   /* match gradient TOP; no bounce */
+body:has(.cpage) {
+  background: linear-gradient(180deg, #2b3d63 0%, #202f52 58%, #1b2a49 100%);
+  background-attachment: fixed;
+  overscroll-behavior: none;                            /* block the page rubber-band / scroll-past */
+}
+
+/* chrome ON the space -> light, quiet */
+.cpage > .topbar .logo { color: #eef3ff; }
+.cpage .langswitch { color: #c7d2ee; }
+.cpage .back { color: #aab6ff; font-weight: 650; }
+
+/* navigation skeleton (country/[code]/loading.js) — instant feedback on the dark space while the real
+   page renders server-side. Shapes echo the summary + three section headers/cards so the swap is calm. */
+.cskel { position: relative; overflow: hidden; border-radius: 10px;
+  background: rgba(255,255,255,.09); }
+.cskel::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+  transform: translateX(-100%); animation: cskel-shimmer 1.25s infinite; }
+@keyframes cskel-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .cskel::after { animation: none; } }
+.cskel-back { width: 96px; height: 18px; margin-bottom: 20px; }
+.cskel-h1 { width: min(60%, 420px); height: 30px; margin: 6px 0 14px; }
+.cskel-meta { display: flex; gap: 10px; }
+.cskel-chip { display: inline-block; width: 86px; height: 30px; border-radius: 999px; }
+.cskel-chip.wide { width: 150px; }
+.cskel-sec { margin-top: 30px; }
+.cskel-sech { width: 190px; height: 24px; margin-bottom: 14px; }
+.cskel-card { width: 100%; height: 220px; border-radius: 16px; background: rgba(255,255,255,.06); }
+/* country header: the search pill and the browse-country pill are the SAME height (46px) */
+.cpage .hero-search-top .search-input { height: 46px; padding-top: 0; padding-bottom: 0; }
+.cpage .csum { margin: 2px 0 8px; }
+.cpage .csum-id h1 { font-size: clamp(22px, 2.8vw, 30px); font-weight: 700; letter-spacing: -.01em; margin: 0 0 12px; color: #f2f6ff; }
+.cpage .csum-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
+.cpage .csum-meta .chip.muted { color: #d6def3; border-color: rgba(180,195,235,.26); background: rgba(255,255,255,.07); }
+.cpage .csec-lead { font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; color: #c6d0ec; margin: 26px 0 10px; }
+.cpage .disclaimer { color: #dce4f5; }               /* footer sits on the dark space -> light text */
+
+/* cards: clean white, GENTLE lift, NO hard border (removes the harsh edge on the dark ground) */
+.cpage .panel, .cpage .mfeed, .cpage .statrow {
+  border: none; border-radius: 16px;
+  box-shadow: 0 12px 32px -14px rgba(8,14,32,.45), 0 1px 3px rgba(8,14,32,.16);
+}
+
+/* sentence-case everything (no shouting caps, fewer eyebrows) */
+.cpage h2, .cpage h3, .cpage .ev-group { text-transform: none; letter-spacing: 0; }
+/* BIG BOLD card titles (Market feed / Qualification) */
+.cpage .mfeed-title, .cpage .qual > h2 { font-size: 21px; font-weight: 750; color: var(--ink); letter-spacing: -.015em; }
+.cpage .qual > h2 .muted { font-size: 14px; font-weight: 600; }
+.cpage .sourcing-sec h2 { font-size: 17px; font-weight: 700; color: var(--brand);
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.cpage .sourcing-sec .src-grain { font-size: 13px; font-weight: 600; color: var(--brand); }  /* same purple as the title */
+/* direction tag on its OWN line under the title: export partners = who this country SELLS TO,
+   import partners = who it BUYS FROM — spelled out so the flow can't be read backwards. Quiet (not
+   bold, muted) so the purple title leads and the '(sell to)' reads as its clarifier. */
+.cpage .sourcing-sec .src-dir { flex: 0 0 100%; margin-top: 3px;
+  font-size: 12px; font-weight: 400; letter-spacing: .01em; color: var(--muted); }
+.cpage .statrow h2 { font-size: 12px; font-weight: 650; color: var(--brand); margin: 0 0 8px; }  /* Exports/Imports labels = purple, matching the partner headers */
+/* sub-headings under a card title */
+.cpage .fnd-h, .cpage .ev-section-h { font-size: 15px; font-weight: 700; color: var(--ink); margin: 24px 0 6px; }
+.cpage .ev-group { font-size: 13px; font-weight: 700; color: var(--ink-2); }
+
+/* Rule changes + Border rejections: two columns in one named section */
+.cpage .ev-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 30px; align-items: start; }
+@media (max-width: 760px) { .cpage .ev-cols { grid-template-columns: 1fr; } }
+
+/* meta row under the title: equal-height pills, Watch pushed to the far right */
+.cpage .csum-meta > * { min-height: 38px; display: inline-flex; align-items: center; }
+.cpage .csum-meta .watchbtn { margin-left: auto; min-height: 38px; }
+
+/* SECTION HEADERS — big + bold, OUTSIDE the cards, sitting on the space (light) */
+.cpage .csec-h { color: #eef3ff; font-size: clamp(20px, 2.3vw, 25px); font-weight: 750; letter-spacing: -.015em; margin: 34px 0 14px; }
+
+/* Year/Quarter grain toggle — top-centre of the stat card, TEXT not pills: chosen colours in, hover glows */
+.cpage .statfreq { flex: 1 0 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px 0 4px; margin-bottom: 6px; }
+.cpage .statfreq .sf { background: none; border: none; cursor: pointer; font: inherit; font-weight: 650; font-size: 13px;
+  color: var(--muted); padding: 5px 18px; border-radius: 8px; transition: color .2s var(--ease), text-shadow .2s var(--ease); }
+.cpage .statfreq .sf:hover:not(:disabled) { color: var(--ink); text-shadow: 0 0 11px rgba(99,102,241,.6); }
+.cpage .statfreq .sf.on { color: var(--brand); }
+.cpage .statfreq .sf:disabled { opacity: .4; cursor: not-allowed; }
+.cpage .statfreq .sf-sep { align-self: center; color: var(--muted); font-size: 14px; }
+
+/* KEY FIGURES: one white card, three flat columns. Dividers are INSET (they don't touch the card
+   edges); columns have extra bottom padding so the card breathes evenly top and bottom. */
+.cpage .statrow { display: flex; flex-wrap: wrap; background: #fff; overflow: hidden; }
+.cpage .statrow > .panel { position: relative; flex: 1 1 200px; margin: 0; padding: 20px 30px 28px; background: none; box-shadow: none; border: none; border-radius: 0; }
+.cpage .statrow > .panel:not(:first-child)::before { content: ""; position: absolute; background: var(--line); left: 0; top: 20px; bottom: 20px; width: 1px; }
+@media (max-width: 720px) {
+  .cpage .statrow > .panel:not(:first-child)::before { left: 24px; right: 24px; top: 0; bottom: auto; width: auto; height: 1px; }
+}
+/* partner tables live INSIDE the same trade card, full-width under the figures, split off by one rule.
+   Their inner panels go flat (no nested white boxes — that box-in-box look is exactly what we avoid). */
+.cpage .statrow-more { flex: 1 0 100%; border-top: 1px solid var(--line); margin: 4px 0 0; padding: 6px 30px 26px; }
+.cpage .statrow-more .sourcing-sec { margin: 20px 0 0; }
+.cpage .statrow-more .drillgrid > .panel { background: none; box-shadow: none; border: none; border-radius: 0; padding: 0; }
+@media (max-width: 720px) { .cpage .statrow-more { padding: 6px 20px 22px; } }
+
+/* USDA PSD forward outlook — a compact supply/demand table (quantities) inside a white card */
+.psd-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.cpage .psd-title { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; }
+.psd-unit { white-space: nowrap; }
+.psd-table { width: 100%; border-collapse: collapse; }
+.psd-table td { padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.psd-table tr:last-child td { border-bottom: none; }
+.psd-attr { color: var(--ink); font-weight: 600; }
+.psd-val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.psd-yoy { text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; width: 84px; }
+.psd-up { color: #15803d; }
+.psd-down { color: #b91c1c; }
+.psd-flat { color: var(--muted); }
+.psd-foot { margin: 10px 0 0; }
+
+/* MARKET FEED: flat detail column with a DIVIDER line between it and the left feed (no grey inner box) */
+.cpage .mfeed-detail { background: none; border: none; border-radius: 0; border-left: 1px solid var(--line-strong);
+  padding: 2px 0 2px 26px; }
+/* the left feed scrolls WITHIN its own column; overscroll-behavior CONTAINS it so it never chains to
+   the page (that was the earlier "drags the whole page" problem — kept the scroll, contained it). */
+/* paginated -> no inner scroll; FIXED height (8 rows) so the last page doesn't shrink the card */
+.cpage .mfeed-list ul { max-height: none; overflow: visible; min-height: 360px; }
+/* selected row: no left marker, no rounded box — just a clean fill + a bolder name */
+.cpage .mrow { border-radius: 0; }
+.cpage .mrow:hover { background: rgba(99,102,241,.05); }
+.cpage .mrow.on { background: rgba(99,102,241,.07); box-shadow: none; }
+.cpage .mrow.on .mrow-name { color: var(--brand-ink); font-weight: 700; }
+.cpage .mrow-num { flex: none; width: 20px; text-align: right; color: var(--muted); font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.cpage .mrow-name { flex: 1; min-width: 0; }
+/* the detail's first tag holds the PRODUCT — on the 'all products' rollup that's a full product name,
+   not a short 'Contract'/'One lot' label. Don't shout a 46-char name in all-caps (the cpage theme is
+   sentence-case anyway), and keep it to one line with an ellipsis so it never sprawls past the card. */
+.cpage .tender-kind { text-transform: none; letter-spacing: .01em; }
+.cpage .mdet-tags { flex-wrap: nowrap; min-width: 0; }
+.cpage .mdet-tags .tender-kind { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cpage .mdet-tags .flowtag { flex: none; }
+/* tab bar as a FOLDER: no grey line — one full-width indigo line the active tab sits on */
+.cpage .mfeed-head { align-items: flex-end; justify-content: flex-start; border-bottom: 2px solid var(--brand); padding-bottom: 0; }
+.cpage .ctab { border-bottom: none; padding: 8px 16px 12px; }
+.cpage .ctab.on { color: var(--brand-ink); font-weight: 750; }
+.cpage .ctab.on .num { opacity: 1; }
+/* pagination under the feed */
+.cpage .mfeed-pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px; }
+.cpage .mfeed-pager button { background: none; border: 1px solid var(--line); border-radius: 8px; width: 30px; height: 30px;
+  cursor: pointer; color: var(--ink); font-size: 17px; line-height: 1; transition: border-color .15s var(--ease), color .15s var(--ease); }
+.cpage .mfeed-pager button:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.cpage .mfeed-pager button:disabled { opacity: .35; cursor: not-allowed; }
+.cpage .mfeed-page { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---- Minimum qualification entry: clean grid of items, NO per-row divider lines ---- */
+.cpage .qual { padding: 24px 26px; }
+.cpage .fnd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px 44px; }
+@media (max-width: 640px) { .cpage .fnd-grid { grid-template-columns: 1fr; } }
+.cpage .fnd-item { border: none; padding: 0; display: flex; flex-direction: column; gap: 5px; }  /* no lines — whitespace separates */
+.cpage .fnd-label { display: flex; align-items: baseline; gap: 9px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.cpage .fnd-label::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--brand); flex: none; transform: translateY(-1px); }  /* a small anchor marker per item */
+.cpage .fnd-desc { line-height: 1.55; padding-left: 16px; }
+.cpage .fnd-src { color: var(--brand); text-decoration: none; font-weight: 600; padding-left: 16px; }
+
+/* ---- Regulatory news: TWO separate boxes, green (changes) + red (rejections), prominent headings ---- */
+.cpage .ev-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .cpage .ev-cols { grid-template-columns: 1fr; } }
+.cpage .ev-box { background: #fff; border-radius: 16px; padding: 22px 24px;
+  box-shadow: 0 12px 32px -14px rgba(8,14,32,.45), 0 1px 3px rgba(8,14,32,.16); }
+.cpage .ev-col-h { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 750; letter-spacing: -.01em; }
+.cpage .ev-box-rules .ev-col-h { color: var(--up); }        /* green — rule changes */
+.cpage .ev-box-rejects .ev-col-h { color: var(--down); }    /* red — border rejections */
+.cpage .ev-col-sub { margin: 3px 0 18px; }
+/* separation by RHYTHM, not lines/cards: generous gap, the colored badge anchors each event's start */
+.cpage .ev-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 26px; }
+.cpage .ev-item { border: none; padding: 0; }
+.cpage .ev-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.cpage .ev-date { font-size: 11px; }
+.cpage .ev-title { font-size: 15px; font-weight: 650; color: var(--ink); line-height: 1.4; }
+.cpage .ev-detail { margin: 5px 0 0; }
+.cpage .ev-meta { margin: 5px 0 0; }
+.cpage .ev-meta a { color: var(--brand); text-decoration: none; }
+@media (max-width: 900px) {
+  .cpage .mfeed-detail { border-left: none; border-top: 1px solid var(--line-strong); padding: 20px 0 2px; }
+}

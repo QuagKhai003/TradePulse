@@ -32,7 +32,10 @@ COVERED_HS = list(PRODUCTS.keys())      # all 1,240 — the slim snapshot format
 
 # Sourcing (quarterly partner drill-down) is heavy — only the core products get it; the rest still
 # get the map/signals + annual history.
-SOURCING_HS = ["TOTAL", "440131", "4407", "090240", "090111", "030617", "080131", "100630"]
+# Both the HS4 HEADING (what search/catalog resolves a commodity to, e.g. coffee -> 0901) AND the curated
+# HS6 child, so the partner tables show for whichever the user lands on — same UI everywhere, real data.
+SOURCING_HS = ["TOTAL", "4401", "440131", "4407", "0901", "090111", "0902", "090240",
+               "0306", "030617", "0801", "080131", "1006", "100630"]
 
 # Quarterly (monthly->quarters) is heavier per call — all-reporters monthly must be pulled ONE month
 # at a time (12-period all-country calls time out). So only the core products get quarterly (excl.
@@ -108,6 +111,42 @@ TENDER_LOOKBACK_DAYS = 365
 # the contract closed — that is the point of the sellers list.
 AWARD_LOOKBACK_DAYS = 730               # how far back to ask TED for still-ACTIVE notices
 
+# Product -> English keywords for keyword-based procurement search (US USAspending; and local matching
+# on the OCDS feeds that have no server-side product filter). Pilots first; grows with coverage.
+PROCUREMENT_KW = {
+    "440131": ["wood pellet"],
+    "4401":   ["wood pellet", "fuel wood"],
+    "4407":   ["sawn wood", "lumber", "timber"],
+    "0901":   ["coffee"],
+    "0902":   ["tea"],
+    "1006":   ["rice"],
+    "0306":   ["shrimp", "prawn"],
+    "0801":   ["cashew"],
+    "0904":   ["pepper", "peppercorn"],
+}
+
+# OCDS publishers for market-specific public buyers beyond EU TED (sources/ocds.py). Each is one country;
+# bulk-paged (no server-side product filter) and matched LOCALLY to TENDER_CPV. (name, base_url, iso3).
+# Only feeds that page newest-first via OCDS links.next go here; date-path/cursor feeds are added per-source.
+OCDS_PUBLISHERS = [
+    ("uk-cf",  "https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search", "GBR"),
+    ("uk-fts", "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages",         "GBR"),
+]
+OCDS_MAX_PAGES = 30                      # bound the bulk scan (our products are niche)
+
+# Korea KONEPS has no product filter -> match the KOREAN bid-notice title locally (sources/koneps.py).
+KONEPS_KW = {
+    "440131": ["펠릿", "목재펠릿", "우드펠릿"],
+    "4401":   ["펠릿", "목재펠릿", "우드펠릿"],
+    "4407":   ["제재목"],
+    "0901":   ["커피", "원두"],
+    "0902":   ["녹차", "홍차"],
+    "1006":   ["백미", "현미"],
+    "0306":   ["새우"],
+    "0801":   ["캐슈"],
+    "0904":   ["후추"],
+}
+
 # --- Regulatory-event lane (ADR-0007): the qualification tab / change-alerts ---------------------
 # A SEPARATE lane from trade_flows (never merged). Pilot products -> the search terms ePing files them
 # under (ePing has no HS<->term index; its own hsCodes[] tag confirms a match when present). HS4 keys
@@ -177,6 +216,33 @@ PRICE_LABEL = {                          # human name of the IMF series (shown s
     "PSAWMAL":  {"en": "Sawnwood (Malaysia)", "vi": "Gỗ xẻ (Malaysia)"},
 }
 PRICE_MONTHS = 26                        # months of history to pull (enough for a 24-mo trend + YoY)
+
+# --- USDA FAS PSD FORWARD OUTLOOK (ADR-0007 separate lane): global supply/demand FORECAST by market
+# year for the AG commodities in our catalog. A forward lane like IMF price, but quantities not $/unit —
+# who is forecast to produce/import/consume next market year. Endpoint api.fas.usda.gov, X-Api-Key header
+# (USDA_API_KEY). Only ag products map; the rest honestly show none. See sources/psd.py. ---
+PSD_HS = {                               # our HS heading -> PSD commodityCode
+    "0901": "0711100",   # Coffee, Green
+    "1006": "0422110",   # Rice, Milled
+    "1001": "0410000",   # Wheat
+    "1005": "0440000",   # Corn
+    "1201": "2222000",   # Oilseed, Soybean
+    "1511": "4243000",   # Oil, Palm
+    "1701": "0612000",   # Sugar, Centrifugal
+    "5201": "2631000",   # Cotton
+    "0207": "0114200",   # Poultry, Meat, Broiler
+}
+PSD_MARKETS = {                          # our M49 market code -> PSD country code (0 = World balance)
+    0: "00", 842: "US", 392: "JA", 410: "KS", 826: "UK", 97: "E4", 704: "VM", 156: "CH",
+}
+PSD_ATTRS = {                            # attributeId -> (en, vi); the headline supply/demand line items
+    28:  ("Production", "Sản lượng"),
+    57:  ("Imports", "Nhập khẩu"),
+    88:  ("Exports", "Xuất khẩu"),
+    125: ("Domestic consumption", "Tiêu thụ nội địa"),
+    176: ("Ending stocks", "Tồn kho cuối kỳ"),
+}
+PSD_YEARS = 5                            # recent market years to pull (spans history + the forecast year)
 
 # M49 country code -> market slug, for matching a SIGNAL watch (country + product) to the regulatory
 # events of that market (change-alerts). The EU is the aggregate (97) AND each member state.

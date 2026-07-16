@@ -26,8 +26,19 @@ from datetime import date, datetime, timedelta
 from .. import config
 
 BASE = "https://epingalert.org/api/v1/azureSearch/getAll"
-CITE = "https://epingalert.org/en/Search?viewData={}"      # verified 200 — the public notification view
+# ePing's own ?viewData= modal can't be deep-linked (it needs a prior search loaded -> blank on a direct
+# link, and ePing has no by-id permalink). But each item carries the OFFICIAL WTO DOCUMENT: the notified
+# attachment (a direct PDF) and the WTO notification document itself (both resolve to the real, untouched
+# official notice). We link that. Only if neither is present do we fall back to an ePing symbol search.
+EPING_SEARCH = "https://epingalert.org/en/Search?freeText={}"
 _TAG = re.compile(r"<[^>]+>")
+
+
+def _url(s: str | None) -> str | None:
+    """First official document link from ePing (the field can be comma-joined), trimmed — or None if
+    absent / not a real http URL. Taking [0] keeps one clean href instead of two URLs concatenated."""
+    first = (s or "").split(",")[0].strip()
+    return first if first.startswith("http") else None
 
 
 def _text(s: str | None, limit: int = 400) -> str | None:
@@ -97,6 +108,12 @@ class EpingSource:
         member = (it.get("notifyingMember") or "").strip() or None
         dist = it.get("distributionDate")
         deadline = it.get("commentDeadlineDate")
+        # Prefer the notified attachment (direct PDF), else the WTO notification document; both open the
+        # real official notice. Symbol search is the last-resort fallback (keeps the user on the notice's
+        # own symbol rather than a blank modal).
+        sym = (it.get("documentSymbol") or "").split(",")[0].strip()
+        source_url = (_url(it.get("notifiedDocumentLink")) or _url(it.get("linkToNotification"))
+                      or EPING_SEARCH.format(urllib.parse.quote(sym or str(eid))))
         return {
             "source": "wto-eping",
             "event_id": str(eid),
@@ -110,7 +127,7 @@ class EpingSource:
             "title": _text(it.get("title"), 200),
             "detail": _text(it.get("description")) or _text(it.get("productsFreeText")),
             "match_kind": match_kind,
-            "source_url": CITE.format(eid),
+            "source_url": source_url,
             "verified_date": verified_date,
         }
 

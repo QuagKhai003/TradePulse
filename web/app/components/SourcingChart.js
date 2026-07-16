@@ -18,7 +18,7 @@ export default function SourcingChart({ sourcing, lang, vnCode = 704 }) {
 
   return (
     <div className="chart">
-      <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg" role="img" aria-label="Sourcing over time">
+      <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg" role="img" aria-label="Top partners by period">
         {periods.map((p, i) => {
           const x = PAD + i * colW + (colW - barW) / 2;
           let acc = 0;

@@ -47,3 +47,10 @@ def kcs_service_key() -> str | None:
     load_env()
     return os.environ.get("KCS_SERVICE_KEY") or None
 
+
+def usda_key() -> str | None:
+    """USDA FAS PSD/ESR key — sent as the X-Api-Key header to api.fas.usda.gov (any api.data.gov key
+    works). USDA_API_KEY in etl/.env, falling back to API_DATA_GOV_KEY. NOT valid for NASS QuickStats."""
+    load_env()
+    return os.environ.get("USDA_API_KEY") or os.environ.get("API_DATA_GOV_KEY") or None
+

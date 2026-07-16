@@ -8,36 +8,31 @@
  */
 import Link from "next/link";
 import RequestQual from "./RequestQual.js";
-import EventsFeed from "./EventsFeed.js";
 import FoundationList from "./FoundationList.js";
 import { loadRequirement } from "../lib/requirements.js";
-import { loadEvents, MARKET_SLUG } from "../lib/events.js";
+import { MARKET_SLUG } from "../lib/events.js";
 import { loadFoundation } from "../lib/foundation.js";
 
 const REQ_MARKET = { 392: "jp", 410: "kr", 97: "eu" };
 const MANDATORY = { "yes": "req-yes", "de-facto": "req-def", "phasing-in": "req-phase" };
 
+// Just the FOUNDATION (baseline things to know) + the full-checklist request. Regulatory news is now
+// its OWN section on the page, not nested here.
 export default async function QualPanel({ hs, code, product, country, lang, t }) {
   const slug = hs === "440131" ? REQ_MARKET[code] : null;
   const d = slug ? await loadRequirement(slug) : null;
   const qs = lang === "en" ? "?lang=en" : "";
-
-  // The EVENTS lane (ADR-0007): rule-changes + border rejections for this product, this market first.
-  // Shown whether or not a curated checklist exists — a live regulatory feed stands on its own.
   const mktSlug = MARKET_SLUG[Number(code)] || null;
-  const events = await loadEvents(hs);
-  const feed = <EventsFeed events={events} slug={mktSlug} marketName={country} t={t} />;
 
   if (!d) {
-    // No detailed curated checklist -> the FOUNDATION informed-list (baseline things to know) + a way to
-    // request the full sourced checklist (demand telemetry) + the live regulatory feed.
     const foundation = await loadFoundation(hs, mktSlug);
+    // Show the baseline foundation where we have it; only fall back to the "request it" prompt (the lock)
+    // when there is no foundation for this product×market — so a covered pair never shows a stray lock.
     return (
       <section className="panel qual">
-        <h2>{t.qualTitle} <span className="muted">· {product} → {country}</span></h2>
-        <FoundationList foundation={foundation} lang={lang} t={t} />
-        <RequestQual hs={hs} market={String(code)} product={product} country={country} lang={lang} />
-        {feed}
+        {foundation
+          ? <FoundationList foundation={foundation} lang={lang} t={t} />
+          : <RequestQual hs={hs} market={String(code)} product={product} country={country} lang={lang} />}
       </section>
     );
   }
@@ -60,7 +55,6 @@ export default async function QualPanel({ hs, code, product, country, lang, t })
         ))}
       </ul>
       <Link className="chip link" href={`/requirements/${slug}${qs}`}>{t.qualViewFull}</Link>
-      {feed}
     </section>
   );
 }

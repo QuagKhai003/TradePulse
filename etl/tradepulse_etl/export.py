@@ -111,15 +111,17 @@ def build_tenders(conn, hs6: str, today: str) -> list[dict]:
         out.append({"id": r["id"], "hs6": r["hs6"], "title": _subject(r["title"]), "buyer": r["buyer"],
                     "buyer_country": r["buyer_country"], "buyer_code": _m49(r["buyer_country"]),
                     "match": r["match_kind"], "cpv": r["cpv"],
-                    "deadline": r["deadline"], "published": r["published"], "url": _notice_url(r["id"])})
+                    "deadline": r["deadline"], "published": r["published"],
+                    "url": (r["url"] if r["url"] else _notice_url(r["id"]))})   # stored source URL (TED/US/UK/…)
     return out
 
 
 # TED titles read "Country – English subject – LOCAL PROJECT NAME" (the tail stays in the buyer's own
 # language). We display the English subject only; the full local title is one click away on TED.
 def _notice_url(pub: str) -> str:
-    """Canonical TED link — the /html view renders in the browser (/pdf downloads; bare path 404s)."""
-    return f"https://ted.europa.eu/en/notice/{pub}/html"
+    """Canonical TED link — the bare notice page is the viewer that renders in-browser. The /html
+    variant serves a standalone document that browsers DOWNLOAD instead of opening."""
+    return f"https://ted.europa.eu/en/notice/{pub}"
 
 
 def _subject(title: str) -> str:
@@ -148,7 +150,8 @@ def build_awards(conn, hs6: str) -> list[dict]:
                     "seller": r["winner"], "seller_country": r["winner_country"],
                     "seller_code": _m49(r["winner_country"]),
                     "match": r["match_kind"], "cpv": r["cpv"], "date": r["award_date"] or r["published"],
-                    "value": r["value"], "currency": r["currency"], "url": _notice_url(r["id"])})
+                    "value": r["value"], "currency": r["currency"],
+                    "url": (r["url"] if r["url"] else _notice_url(r["id"]))})   # stored source URL (TED/US/UK/…)
     return out
 
 
@@ -200,6 +203,51 @@ def build_forward(conn, hs: str) -> dict | None:
             "series": series[-24:],
             "url": "https://www.imf.org/en/Research/commodity-prices",
             "verified": rows[-1]["verified_date"]}
+
+
+PSD_CITE = "https://apps.fas.usda.gov/psdonline/app/index.html"
+
+
+def build_psd(conn, hs: str) -> dict | None:
+    """FORWARD lane (ADR-0007): USDA PSD supply/demand OUTLOOK for a product, keyed by market (M49; '0' =
+    World). Per market: the headline attributes (production/imports/exports/consumption/stocks), each with
+    a short by-year series + latest value + YoY move + direction — so the country page can show the
+    forecast for THAT market (falling back to World). None when the product is not a PSD ag commodity.
+    A SEPARATE lane: a quantity forecast, never merged into the customs $ signal."""
+    from .db import fetch_psd_outlook
+    rows = fetch_psd_outlook(conn, hs)
+    if not rows:
+        return None
+    by_mkt: dict[str, dict[int, dict[str, tuple]]] = {}
+    for r in rows:
+        by_mkt.setdefault(str(r["market"]), {}).setdefault(r["attribute_id"], {})[r["market_year"]] = (r["value"], r["unit"])
+
+    out: dict[str, dict] = {}
+    for m, attrs in by_mkt.items():
+        years = sorted({y for per in attrs.values() for y in per})
+        if not years:
+            continue
+        latest_year = years[-1]
+        prev_year = years[-2] if len(years) >= 2 else None
+        attr_list, unit = [], ""
+        for aid, (en, vi) in config.PSD_ATTRS.items():
+            per = attrs.get(aid)
+            if not per:
+                continue
+            lv = (per.get(latest_year) or (None, ""))[0]
+            unit = unit or (per.get(latest_year) or (None, ""))[1]
+            prev = (per.get(prev_year) or (None,))[0] if prev_year else None
+            # YoY only from two real years — never invent a base (same rule as the price lane).
+            yoy = round((lv - prev) / prev * 100, 1) if (prev not in (None, 0) and lv is not None) else None
+            direction = None if yoy is None else ("up" if yoy > 2 else "down" if yoy < -2 else "flat")
+            attr_list.append({"id": aid, "en": en, "vi": vi, "years": years,
+                              "values": [(per.get(y) or (None,))[0] for y in years],
+                              "latest": lv, "unit": (per.get(latest_year) or (None, ""))[1],
+                              "yoy": yoy, "direction": direction})
+        if attr_list:
+            out[m] = {"market_year": latest_year, "unit": unit, "attributes": attr_list,
+                      "source": "usda-psd", "url": PSD_CITE, "verified": rows[-1]["verified_date"]}
+    return out or None
 
 
 def build_all(conn, today: str) -> tuple[list, list, list]:

@@ -152,6 +152,22 @@ CREATE TABLE IF NOT EXISTS commodity_prices (
 );
 
 CREATE INDEX IF NOT EXISTS ix_prices_hs4 ON commodity_prices (hs4);
+
+-- USDA FAS PSD forward supply/demand OUTLOOK (ADR-0007 separate lane) — a quantity forecast by market
+-- year, per market, never merged into the customs $ signal. Ag commodities only.
+CREATE TABLE IF NOT EXISTS psd_outlook (
+    source          TEXT    NOT NULL,   -- 'usda-psd'
+    hs4             TEXT    NOT NULL,   -- our product key
+    commodity       TEXT    NOT NULL,   -- PSD commodityCode (makes the mapping explicit)
+    market          INTEGER NOT NULL,   -- M49 market; 0 = World (the global balance)
+    market_year     TEXT    NOT NULL,   -- 'YYYY' — the forward market year
+    attribute_id    INTEGER NOT NULL,   -- PSD attribute (28 Production, 57 Imports, 88 Exports, ...)
+    value           REAL,               -- quantity in `unit`
+    unit            TEXT,               -- e.g. '1000 MT', '1000 60 KG BAGS'
+    verified_date   TEXT    NOT NULL,
+    PRIMARY KEY (source, hs4, market, market_year, attribute_id)
+);
+CREATE INDEX IF NOT EXISTS ix_psd_hs4 ON psd_outlook (hs4);
 """
 
 
@@ -294,6 +310,29 @@ def fetch_commodity_prices(conn: sqlite3.Connection, hs: str) -> list[dict]:
     """Price series for a product, oldest->newest. Matches the exact HS key (the map is per-key, so an
     HS4 heading and its children each carry their own copy). Empty = no honest price series."""
     sql = "SELECT * FROM commodity_prices WHERE hs4 = ? ORDER BY period"
+    return [dict(r) for r in conn.execute(sql, (hs,)).fetchall()]
+
+
+def upsert_psd_outlook(conn: sqlite3.Connection, rows: list[dict]) -> int:
+    """Idempotent on (source, hs4, market, market_year, attribute_id). Re-pulling refreshes the value."""
+    sql = """
+        INSERT INTO psd_outlook (source, hs4, commodity, market, market_year, attribute_id,
+                                 value, unit, verified_date)
+        VALUES (:source, :hs4, :commodity, :market, :market_year, :attribute_id,
+                :value, :unit, :verified_date)
+        ON CONFLICT(source, hs4, market, market_year, attribute_id) DO UPDATE SET
+            commodity=excluded.commodity, value=excluded.value, unit=excluded.unit,
+            verified_date=excluded.verified_date
+    """
+    with conn:
+        conn.executemany(sql, rows)
+    return len(rows)
+
+
+def fetch_psd_outlook(conn: sqlite3.Connection, hs: str) -> list[dict]:
+    """PSD outlook rows for a product (all markets + market years), oldest year first. Empty = the
+    product is not an ag commodity PSD covers (no outlook line, same as no price series)."""
+    sql = "SELECT * FROM psd_outlook WHERE hs4 = ? ORDER BY market_year"
     return [dict(r) for r in conn.execute(sql, (hs,)).fetchall()]
 
 

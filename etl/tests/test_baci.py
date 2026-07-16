@@ -45,6 +45,17 @@ class BaciTest(unittest.TestCase):
         rows = BaciSource._parse_year(self._write(), "2023", {"090111"}, set(), frozenset({("090111", "2023")}))
         self.assertEqual(rows, [])
 
+    def test_pull_sourcing_bilateral_plus_world_focus_only(self):
+        # ANNUAL partner sourcing for all products: keep the bilateral partner (not just World), HS4-level,
+        # and only for the focus reporters (US here). World = sum of partners, added for build_sourcing.
+        rows = BaciSource(self._write().parent).pull_sourcing([842])
+        us_imp = {r["partnerCode"]: r["primaryValue"] for r in rows
+                  if r["reporterCode"] == 842 and r["cmdCode"] == "0901" and r["flowCode"] == "M"}
+        self.assertEqual(us_imp[704], 5_000_000.0)          # US imports 0901 from VN
+        self.assertEqual(us_imp[251], 2_000_000.0)          # ...and from FR
+        self.assertEqual(us_imp[0], 7_000_000.0)            # World = sum of partners
+        self.assertFalse([r for r in rows if r["reporterCode"] == 826])   # UK not a focus reporter -> dropped
+
 
 if __name__ == "__main__":
     unittest.main()

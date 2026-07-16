@@ -7,11 +7,11 @@
  */
 import { fmtPct, fmtUSD } from "../lib/format.js";
 
-export default function PartnerTable({ partners, lang, t, vnCode = 704 }) {
+export default function PartnerTable({ partners, lang, t, col, vnCode = 704 }) {
   return (
     <table className="ptable">
       <thead>
-        <tr><th>#</th><th>{t.partnerCountry}</th><th className="num">{t.value}</th>
+        <tr><th>#</th><th>{col || t.partnerCountry}</th><th className="num">{t.value}</th>
           <th className="num">{t.share}</th><th className="num">{t.yoy}</th></tr>
       </thead>
       <tbody>

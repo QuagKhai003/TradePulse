@@ -29,6 +29,8 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
                                      cpv, hs, lang, t, openCount = Infinity }) {
   const [tab, setTab] = useState("buyers");
   const [pick, setPick] = useState(0);
+  const [page, setPage] = useState(0);
+  const PER = 8;
 
   // "All products" is not a good anyone tenders for — but the answer it owes is real: everything,
   // across every product. So it is a rollup, and each row names the product it belongs to.
@@ -38,6 +40,11 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
   const items = { buyers: tenders, sellers, orders }[tab] || [];
   const rows = items.slice(0, CAP).map((x, i) => toRow(tab, x, i >= openCount, isAggregate, lang, t));
   const chosen = rows[Math.min(pick, rows.length - 1)];
+  const pageCount = Math.max(1, Math.ceil(rows.length / PER));
+  // Pad the last (short) page up to a full PER slots so the list box keeps ONE height on every page —
+  // otherwise 8 real rows are a hair taller than the min-height and the short page visibly collapses.
+  const onPage = Math.min(PER, Math.max(0, rows.length - page * PER));
+  const fillerCount = pageCount > 1 ? PER - onPage : 0;
 
   const tabs = [
     { v: "buyers", label: t.tabBuyers, n: tenders.length },
@@ -48,15 +55,12 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
   function choose(v) {
     setTab(v);
     setPick(0);
+    setPage(0);
   }
 
   return (
     <section className="mfeed">
       <header className="mfeed-head">
-        <div>
-          <h2 className="mfeed-title">{t.marketFeed}</h2>
-          <p className="mfeed-sub muted">{country} · {product}</p>
-        </div>
         <div className="mfeed-tabs">
           {tabs.map((x) => (
             <button key={x.v} type="button" className={`ctab ${tab === x.v ? "on" : ""}`}
@@ -75,13 +79,14 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
         <div className="mfeed-body">
           <div className="mfeed-list">
             <ul>
-              {rows.map((r, i) => (
+              {rows.map((r, i) => (i < page * PER || i >= (page + 1) * PER) ? null : (
                 <li key={r.key}>
                   {r.locked ? (
                     // Locked: the whole row blurs and cannot be selected — it goes to /pricing. The tab
                     // COUNT still shows the real total, so the paywall hides the rows, never the truth
                     // about how many there are.
                     <Link className="mrow locked" href="/pricing">
+                      <span className="mrow-num">{i + 1}</span>
                       <span className="mrow-blur">
                         <span className="mrow-name">{r.name}</span>
                         <span className="mrow-meta">
@@ -94,6 +99,7 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
                   ) : (
                     <button type="button" className={`mrow ${i === Math.min(pick, rows.length - 1) ? "on" : ""}`}
                             onClick={() => setPick(i)}>
+                      <span className="mrow-num">{i + 1}</span>
                       <span className="mrow-name">{r.name}</span>
                       <span className="mrow-meta">
                         {/* a "One lot" chip so a food-framework contract with a coffee lot never reads
@@ -106,16 +112,18 @@ export default function MarketFeed({ tenders = [], sellers = [], orders = [], pr
                   )}
                 </li>
               ))}
+              {/* keep the last (short) page the exact height of a full one — no visible shrink */}
+              {Array.from({ length: fillerCount }).map((_, k) => (
+                <li key={`fill-${k}`} className="mrow-fill" aria-hidden="true"><span className="mrow">&nbsp;</span></li>
+              ))}
             </ul>
-            <div className="mfeed-foot muted">
-              {items.length > CAP && <p>{t.showingOf.replace("{n}", CAP).replace("{total}", items.length)}</p>}
-              {isAggregate && <p>{t.aggregateNote}</p>}
-              {cpv && !cpv.exact && cpv.label && (
-                <p>{t.cpvNear} <b>{cpv.label}</b> <span className="num">({cpv.cpv})</span></p>
-              )}
-              {cpv?.exact && <p>{t.cpvExact} <span className="num">{cpv.cpv}</span></p>}
-              <p className="mfeed-src">{t.tenderSource}</p>
-            </div>
+            {pageCount > 1 && (
+              <nav className="mfeed-pager">
+                <button type="button" disabled={page === 0} onClick={() => setPage(page - 1)} aria-label="Previous">‹</button>
+                <span className="mfeed-page">{page + 1} / {pageCount}</span>
+                <button type="button" disabled={page >= pageCount - 1} onClick={() => setPage(page + 1)} aria-label="Next">›</button>
+              </nav>
+            )}
           </div>
 
           <aside className="mfeed-detail">

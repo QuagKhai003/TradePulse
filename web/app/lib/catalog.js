@@ -116,11 +116,17 @@ export function norm(s) {
 export function search(query, limit = 8) {
   const q = norm(query).trim();
   if (!q) return [];
+  const isCode = /^\d{2,}$/.test(q);        // an HS-code query, e.g. "0901", "440131", "44013100"
   return CATALOG
     .map((c) => {
       const hay = [c.name_en, c.name_vi, ...c.synonyms].map(norm);
-      const exact = hay.some((h) => h === q);
-      const starts = hay.some((h) => h.startsWith(q));
+      const code = String(c.hs6);
+      // HS code: exact, a typed prefix ("4401" -> 440131), or a longer code (HS8) that falls under
+      // this heading ("44013100" -> 440131 / 4401).
+      const codeExact = isCode && code === q;
+      const codeHit = isCode && (code.startsWith(q) || q.startsWith(code));
+      const exact = codeExact || hay.some((h) => h === q);
+      const starts = codeHit || hay.some((h) => h.startsWith(q));
       const has = hay.some((h) => h.includes(q));
       const score = exact ? 0 : starts ? 1 : has ? 2 : 99;
       return { c, score };

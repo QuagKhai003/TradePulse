@@ -16,8 +16,8 @@ from pathlib import Path
 from .alerts import rollup_locked_clicks, signal_alerts
 from .db import DEFAULT_DB, connect, count_trade_flows, fetch_flows, fetch_signals, upsert_signals
 from .export import (DEFAULT_SNAPSHOT, build_all, build_awards, build_cpv_match, build_events,
-                     build_forward, build_sellers_web, build_snapshot, build_tenders, write_countries,
-                     write_json, write_snapshot, write_tenders)
+                     build_forward, build_psd, build_sellers_web, build_snapshot, build_tenders,
+                     write_countries, write_json, write_snapshot, write_tenders)
 from .pipeline import get_sources, run_multi
 from .signals import compute_signals
 
@@ -79,19 +79,51 @@ def main() -> None:
     print(f"[tradepulse] flows={count_trade_flows(conn)} (upserted {n}) signals={len(sigs)} "
           f"alerts={len(alerts)} products={len(covered)} [{' '.join(covered)}]")
 
-    # Tier 2: quarterly partner sourcing for the focus reporters (needs the Comtrade key).
-    sourcing_src = next((s for s in sources if getattr(s, "key", None) and hasattr(s, "pull_sourcing")), None)
-    if sourcing_src is not None:
+    # Partner sourcing (plan §7.3): an ANNUAL partner TABLE for EVERY product (value = latest full year,
+    # YoY = year over year — uniform across the catalog), plus a fresher QUARTERLY CHART for the focus
+    # markets. The table always comes from BACI (bulk, no API); the quarterly chart from Comtrade for the
+    # focus products only. Batch-only (a lazy --only build reuses the stored files).
+    if not only:
+        from collections import defaultdict
         from .config import FOCUS_REPORTERS, SOURCING_HS
-        from .sourcing import build_sourcing, write_sourcing
-        srcs = []
-        for hs in SOURCING_HS:
-            rows = sourcing_src.pull_sourcing([hs], FOCUS_REPORTERS)
-            sm = build_sourcing(rows, hs)
+        from .sourcing import build_sourcing, total_quarterly_flows, write_sourcing
+        from .sources.baci import BaciSource
+
+        # quarterly chart rows for the focus products (needs the Comtrade key; skipped if absent)
+        sourcing_src = next((s for s in sources if getattr(s, "key", None) and hasattr(s, "pull_sourcing")), None)
+        q_by_hs: dict[str, list] = defaultdict(list)
+        if sourcing_src is not None:
+            for hs in SOURCING_HS:
+                for r in sourcing_src.pull_sourcing([hs], FOCUS_REPORTERS):
+                    q_by_hs[str(r["cmdCode"])].append(r)
+
+        # annual table rows for EVERY product (+ the curated HS6 pilots + the all-commodities TOTAL)
+        hs6_extra = [h for h in SOURCING_HS if len(h) == 6]
+        a_by_hs: dict[str, list] = defaultdict(list)
+        for r in BaciSource().pull_sourcing(FOCUS_REPORTERS, hs6_extra=hs6_extra, include_total=True):
+            a_by_hs[str(r["cmdCode"])].append(r)
+
+        written = 0
+        for hs in set(a_by_hs) | set(q_by_hs):
+            sm = build_sourcing(a_by_hs.get(hs, []), hs, q_by_hs.get(hs))
             if sm:
                 write_sourcing(sm, default_path.parent / f"sourcing-{hs}.json")
-                srcs.append(f"{hs}:{len(sm)}r")
-        print(f"[tradepulse] sourcing (quarterly, {len(FOCUS_REPORTERS)} focus reporters) [{' '.join(srcs)}]")
+                written += 1
+        print(f"[tradepulse] sourcing: {written} products (annual table; quarterly chart for "
+              f"{sum(1 for h in SOURCING_HS if h in q_by_hs)} focus)")
+
+        # Promote the focus reporters' quarterly all-commodities totals (World partner) into trade_flows,
+        # so the TOTAL 'all products' view gains the Year/Quarter toggle — reuses the quarterly chart data.
+        total_sm = build_sourcing(a_by_hs.get("TOTAL", []), "TOTAL", q_by_hs.get("TOTAL"))
+        if total_sm:
+            from .db import upsert_trade_flows
+            qflows = total_quarterly_flows(total_sm, "TOTAL", now_iso)
+            if qflows:
+                upsert_trade_flows(conn, qflows)
+                upsert_signals(conn, compute_signals(fetch_flows(conn, hs6="TOTAL"), now_iso))
+                snap = build_snapshot(conn, generated_at=now_iso, hs6="TOTAL")
+                write_snapshot(snap, default_path.parent / "snapshot-TOTAL.json")
+                print(f"[tradepulse] TOTAL quarterly: promoted {len(qflows)} flows -> Year/Quarter toggle")
 
     # --- Forward demand: EU TED tenders (who is buying RIGHT NOW) — plan §9.2 / Phase 2.2 ---
     if args.tenders or args.export_only or only:
@@ -113,6 +145,26 @@ def main() -> None:
             asince = (today - timedelta(days=AWARD_LOOKBACK_DAYS)).strftime("%Y%m%d")
             awards = ted.pull_awards(TENDER_CPV, asince, now_iso)
             upsert_awards(conn, awards)
+            # US market (market-specific buyers, beyond EU TED): USAspending federal awards — agency buyer
+            # + supplier, keyword search per product, tagged USA. Keyless.
+            from .config import OCDS_MAX_PAGES, OCDS_PUBLISHERS, PROCUREMENT_KW
+            from .sources.usaspending import UsaSpendingSource
+            us_since = (today - timedelta(days=AWARD_LOOKBACK_DAYS)).isoformat()
+            upsert_awards(conn, UsaSpendingSource().pull_awards(PROCUREMENT_KW, us_since, today.isoformat(), now_iso))
+            # OCDS markets (UK, +OCDS nations): bulk-page recent releases, match CPV locally, tag by country.
+            from .sources.ocds import OcdsSource
+            for name, base, iso3 in OCDS_PUBLISHERS:
+                tn, aw = OcdsSource(base, iso3, name, max_pages=OCDS_MAX_PAGES).pull(TENDER_CPV, us_since, now_iso)
+                upsert_tenders(conn, tn)
+                upsert_awards(conn, aw)
+            # Korea (KONEPS): keyless-ish data.go.kr key; recent bid notices matched on the Korean title
+            # (no product filter, ~30-day window cap) -> thin, keyword-based. Tagged KOR.
+            from .config import KONEPS_KW
+            from .settings import kcs_service_key
+            from .sources.koneps import KonepsSource
+            kr_since = (today - timedelta(days=25)).strftime("%Y%m%d")
+            upsert_tenders(conn, KonepsSource(kcs_service_key(), max_pages=15).pull(
+                KONEPS_KW, kr_since, today.strftime("%Y%m%d"), now_iso))
         # SELLERS = real exporters from approval registries (ADR-0006), NOT award winners. Pulled from
         # DG SANTE (keyless; animal-origin -> seafood + honey among our products). A won contract is a
         # PAST ORDER, so sellers must come from a different source or the two tabs are the same data.
@@ -167,11 +219,21 @@ def main() -> None:
                 print(f"[tradepulse] change-alerts: {len(new_ev)} new events -> "
                       f"{len(matched)} watched signal(s) notified")
         event_n = 0
+        ev_seen, ev_all = set(), []
         for hs in ([only] if only else sorted(REGULATORY_HS)):
             ev = build_events(conn, hs)                  # [] for products with no coverage (honest)
             write_json(ev, default_path.parent / f"events-{hs}.json")
             event_n += len(ev)
-        print(f"[tradepulse] regulatory events (ePing): {events_pulled} pulled, {event_n} product-rows")
+            if not only:
+                for e in ev:                             # aggregate for the "All products" regulatory feed
+                    k = (e["source"], e["id"])
+                    if k not in ev_seen:
+                        ev_seen.add(k); ev_all.append(e)
+        if not only:
+            ev_all.sort(key=lambda e: e.get("date") or "", reverse=True)
+            write_json(ev_all, default_path.parent / "events-TOTAL.json")
+        print(f"[tradepulse] regulatory events: {events_pulled} pulled, {event_n} product-rows"
+              + (f", {len(ev_all)} in TOTAL" if not only else ""))
 
         # FORWARD lane (ADR-0007): IMF world PRICE trend. Pulled in the batch; a lazy --only build reads
         # the stored DB. Only products with an honest direct IMF series get a line (null otherwise).
@@ -186,6 +248,23 @@ def main() -> None:
             write_json(fwd, default_path.parent / f"forward-{hs}.json")
             fwd_n += 1 if fwd else 0
         print(f"[tradepulse] forward price (IMF PCPS): {fwd_n} products with a trend line")
+
+        # FORWARD lane #2 (ADR-0007): USDA PSD supply/demand OUTLOOK — a quantity forecast by market year
+        # (production/imports/exports/consumption/stocks), per market. Ag commodities only; keyed on hs4.
+        # Batch pull (needs the FAS key, X-Api-Key header); a lazy --only build reads the stored DB.
+        from .config import PSD_ATTRS, PSD_HS, PSD_MARKETS
+        from .db import upsert_psd_outlook
+        from .settings import usda_key
+        _psd_key = usda_key()
+        if do_pull and _psd_key:
+            from .sources.psd import PsdSource
+            upsert_psd_outlook(conn, PsdSource(_psd_key).pull(PSD_HS, PSD_MARKETS, PSD_ATTRS, today=today))
+        psd_n = 0
+        for hs in ([only] if only else sorted(PSD_HS)):
+            pd = build_psd(conn, hs)                     # None -> null file -> the UI shows no outlook
+            write_json(pd, default_path.parent / f"psd-{hs}.json")
+            psd_n += 1 if pd else 0
+        print(f"[tradepulse] forward outlook (USDA PSD): {psd_n} products with an outlook")
 
         # TOTAL sellers = every registry seller, deduped by (org, country). Skipped on a lazy build.
         allrows = [] if only else fetch_registry_sellers(conn, list(SELLER_SECTIONS))

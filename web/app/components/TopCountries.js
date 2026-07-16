@@ -28,9 +28,12 @@ export default function TopCountries({ countries, lang, t, hs, freq = "A", flow 
   const metric = flow === "export" ? "exp" : "imp";
   const rank = (c) => slotFor(c[metric], freq)?.value_usd || 0;
   const rows = [...countries].sort((a, b) => rank(b) - rank(a));
+  // The period the ranking is FOR — the latest one present at the chosen grain. Annual -> "2025";
+  // toggling Quarter relabels to the latest COMPLETE quarter (customs lag ~a quarter), e.g. "2026-Q1".
+  const asOf = rows.map((c) => slotFor(c[metric], freq)?.period).filter(Boolean).sort().pop();
   return (
     <div className="col-fill">
-      <div className="panel-h"><h2>{t.topCountries}</h2></div>
+      <div className="panel-h"><h2>{t.topCountries}</h2>{asOf && <span className="tc-period">{t.inPeriod} {asOf}</span>}</div>
       <ol className="tc-list scrollx">
         {rows.map((c, i) => (
           <li key={c.code} className="tc-row">

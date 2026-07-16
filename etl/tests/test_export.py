@@ -7,8 +7,8 @@ test_export.py — the web seam: slim snapshot shape + tender display fields.
 """
 import unittest
 
-from tradepulse_etl.db import connect, upsert_trade_flows
-from tradepulse_etl.export import _m49, _subject, build_sellers, build_snapshot
+from tradepulse_etl.db import connect, upsert_psd_outlook, upsert_trade_flows
+from tradepulse_etl.export import _m49, _subject, build_psd, build_sellers, build_snapshot
 
 
 def _row(period, value, flow="X", freq="A", reporter=704):
@@ -75,6 +75,34 @@ class SellersFromAwardsTest(unittest.TestCase):
     def test_mixed_currencies_give_no_total(self):      # never a number we cannot stand behind
         a = [dict(self.A[0]), dict(self.A[1], currency="USD")]
         self.assertIsNone(build_sellers(a)[0]["value"])
+
+
+def _psd_row(market, year, attr, value, unit="1000 MT"):
+    return {"source": "usda-psd", "hs4": "0901", "commodity": "0711100", "market": market,
+            "market_year": year, "attribute_id": attr, "value": value, "unit": unit,
+            "verified_date": "2026-07-16"}
+
+
+class PsdOutlookTest(unittest.TestCase):
+    """The PSD forward lane groups by market, with latest value + a YoY direction from two real years."""
+
+    def test_groups_by_market_with_latest_and_direction(self):
+        conn = connect(":memory:")
+        upsert_psd_outlook(conn, [
+            _psd_row(842, "2024", 57, 100.0), _psd_row(842, "2025", 57, 130.0),   # US imports +30% -> up
+            _psd_row(0, "2024", 28, 200.0), _psd_row(0, "2025", 28, 200.0),        # world production flat
+        ])
+        out = build_psd(conn, "0901")
+        self.assertEqual(set(out), {"842", "0"})
+        us_imp = next(a for a in out["842"]["attributes"] if a["id"] == 57)
+        self.assertEqual(us_imp["latest"], 130.0)
+        self.assertEqual(us_imp["direction"], "up")
+        self.assertEqual(out["842"]["market_year"], "2025")            # latest year is the headline
+        world_prod = next(a for a in out["0"]["attributes"] if a["id"] == 28)
+        self.assertEqual(world_prod["direction"], "flat")
+
+    def test_uncovered_product_is_none(self):
+        self.assertIsNone(build_psd(connect(":memory:"), "8703"))     # cars — not a PSD ag commodity
 
 
 if __name__ == "__main__":
