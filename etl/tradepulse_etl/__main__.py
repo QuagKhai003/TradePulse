@@ -181,6 +181,12 @@ def main() -> None:
             au_tn, au_aw = AusTenderSource(max_pages=30).pull(TENDER_CPV, us_since, now_iso)
             upsert_tenders(conn, au_tn)
             upsert_awards(conn, au_aw)
+            # Chile (ChileCompra): list-then-fetch, UNSPSC -> approximate HS crosswalk. Flaky host -> bounded. CHL.
+            from .sources.chilecompra import ChileCompraSource
+            cl_since = (today - timedelta(days=45)).isoformat()
+            cl_tn, cl_aw = ChileCompraSource(max_details=200).pull(TENDER_CPV, cl_since, now_iso)
+            upsert_tenders(conn, cl_tn)
+            upsert_awards(conn, cl_aw)
         # SELLERS = real exporters from approval registries (ADR-0006), NOT award winners. Pulled from
         # DG SANTE (keyless; animal-origin -> seafood + honey among our products). A won contract is a
         # PAST ORDER, so sellers must come from a different source or the two tabs are the same data.
