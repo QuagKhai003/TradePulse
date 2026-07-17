@@ -136,62 +136,56 @@ def main() -> None:
         do_pull = args.tenders and not args.export_only and not only
         rows, awards = [], []
         if do_pull:
-            from .sources.ted import TedSource
-            ted = TedSource()
-            since = (today - timedelta(days=TENDER_LOOKBACK_DAYS)).strftime("%Y%m%d")
-            rows = ted.pull(TENDER_CPV, since, now_iso)
-            upsert_tenders(conn, rows)
-            # PAST ORDERS: awarded contracts -> also the only public evidence of who SELLS this product.
-            asince = (today - timedelta(days=AWARD_LOOKBACK_DAYS)).strftime("%Y%m%d")
-            awards = ted.pull_awards(TENDER_CPV, asince, now_iso)
-            upsert_awards(conn, awards)
-            # US market (market-specific buyers, beyond EU TED): USAspending federal awards — agency buyer
-            # + supplier, keyword search per product, tagged USA. Keyless.
-            from .config import OCDS_MAX_PAGES, OCDS_PUBLISHERS, PROCUREMENT_KW
-            from .sources.usaspending import UsaSpendingSource
-            us_since = (today - timedelta(days=AWARD_LOOKBACK_DAYS)).isoformat()
-            upsert_awards(conn, UsaSpendingSource().pull_awards(PROCUREMENT_KW, us_since, today.isoformat(), now_iso))
-            # OCDS markets (UK, +OCDS nations): bulk-page recent releases, match CPV locally, tag by country.
-            from .sources.ocds import OcdsSource
-            for name, base, iso3 in OCDS_PUBLISHERS:
-                tn, aw = OcdsSource(base, iso3, name, max_pages=OCDS_MAX_PAGES).pull(TENDER_CPV, us_since, now_iso)
-                upsert_tenders(conn, tn)
-                upsert_awards(conn, aw)
-            # Korea (KONEPS): keyless-ish data.go.kr key; recent bid notices matched on the Korean title
-            # (no product filter, ~30-day window cap) -> thin, keyword-based. Tagged KOR.
-            from .config import KONEPS_KW
+            from concurrent.futures import ThreadPoolExecutor
+            from .config import (KONEPS_KW, OCDS_MAX_PAGES, OCDS_PUBLISHERS, PROCUREMENT_KW)
             from .settings import kcs_service_key
-            from .sources.koneps import KonepsSource
-            kr_since = (today - timedelta(days=25)).strftime("%Y%m%d")
-            upsert_tenders(conn, KonepsSource(kcs_service_key(), max_pages=15).pull(
-                KONEPS_KW, kr_since, today.strftime("%Y%m%d"), now_iso))
-            # Ukraine (ProZorro): list-then-fetch, ДК021 = CPV codes -> reuses the CPV crosswalk. Tagged UKR.
-            from .sources.prozorro import ProzorroSource
-            ua_tn, ua_aw = ProzorroSource(max_details=400).pull(TENDER_CPV, us_since, now_iso)
-            upsert_tenders(conn, ua_tn)
-            upsert_awards(conn, ua_aw)
-            # Moldova (MTender): list-then-fetch, CPV in records[0].compiledRelease -> reuses crosswalk. MDA.
-            from .sources.mtender import MtenderSource
-            md_since = (today - timedelta(days=60)).isoformat()
-            md_tn, md_aw = MtenderSource(max_details=400).pull(TENDER_CPV, md_since, now_iso)
-            upsert_tenders(conn, md_tn)
-            upsert_awards(conn, md_aw)
-            # Australia (AusTender): inline OCDS contract releases, UNSPSC -> approximate HS crosswalk. AUS.
             from .sources.austender import AusTenderSource
-            au_tn, au_aw = AusTenderSource(max_pages=30).pull(TENDER_CPV, us_since, now_iso)
-            upsert_tenders(conn, au_tn)
-            upsert_awards(conn, au_aw)
-            # Chile (ChileCompra): list-then-fetch, UNSPSC -> approximate HS crosswalk. Flaky host -> bounded. CHL.
             from .sources.chilecompra import ChileCompraSource
-            cl_since = (today - timedelta(days=45)).isoformat()
-            cl_tn, cl_aw = ChileCompraSource(max_details=200).pull(TENDER_CPV, cl_since, now_iso)
-            upsert_tenders(conn, cl_tn)
-            upsert_awards(conn, cl_aw)
-            # Dominican Republic (DGCP): list-then-fetch, UNSPSC -> approximate HS crosswalk. DOM.
             from .sources.dgcp import DgcpSource
-            do_tn, do_aw = DgcpSource(max_details=300).pull(TENDER_CPV, us_since, today.isoformat(), now_iso)
-            upsert_tenders(conn, do_tn)
-            upsert_awards(conn, do_aw)
+            from .sources.koneps import KonepsSource
+            from .sources.mtender import MtenderSource
+            from .sources.ocds import OcdsSource
+            from .sources.prozorro import ProzorroSource
+            from .sources.ted import TedSource
+            from .sources.usaspending import UsaSpendingSource
+            ted = TedSource()
+            since    = (today - timedelta(days=TENDER_LOOKBACK_DAYS)).strftime("%Y%m%d")
+            asince   = (today - timedelta(days=AWARD_LOOKBACK_DAYS)).strftime("%Y%m%d")
+            us_since = (today - timedelta(days=AWARD_LOOKBACK_DAYS)).isoformat()
+            kr_since = (today - timedelta(days=25)).strftime("%Y%m%d")
+            md_since = (today - timedelta(days=60)).isoformat()
+            cl_since = (today - timedelta(days=45)).isoformat()
+
+            # Every source below is an independent, I/O-bound NETWORK pull. Run one after another they took
+            # ~50 min; run them CONCURRENTLY and the pull takes about as long as the SLOWEST single source.
+            # Each task returns (tenders, awards); the DB WRITES stay in the main thread (SQLite is a single
+            # writer). One flaky source returning empty must not sink the batch — hence the _safe wrapper.
+            def _safe(fn):
+                try:
+                    r = fn()
+                    return r if isinstance(r, tuple) else (r, [])   # some sources return tenders only
+                except Exception as e:  # noqa: BLE001 — isolate a failing source, keep the rest
+                    print(f"[tenders] source error {type(e).__name__}: {e}")
+                    return ([], [])
+            tasks = [
+                lambda: (ted.pull(TENDER_CPV, since, now_iso), ted.pull_awards(TENDER_CPV, asince, now_iso)),
+                lambda: ([], UsaSpendingSource().pull_awards(PROCUREMENT_KW, us_since, today.isoformat(), now_iso)),
+                lambda: (KonepsSource(kcs_service_key(), max_pages=15).pull(KONEPS_KW, kr_since, today.strftime("%Y%m%d"), now_iso), []),
+                lambda: ProzorroSource(max_details=400).pull(TENDER_CPV, us_since, now_iso),
+                lambda: MtenderSource(max_details=400).pull(TENDER_CPV, md_since, now_iso),
+                lambda: AusTenderSource(max_pages=30).pull(TENDER_CPV, us_since, now_iso),
+                lambda: ChileCompraSource(max_details=200).pull(TENDER_CPV, cl_since, now_iso),
+                lambda: DgcpSource(max_details=300).pull(TENDER_CPV, us_since, today.isoformat(), now_iso),
+            ]
+            tasks += [(lambda base=base, iso3=iso3, nm=nm:
+                       OcdsSource(base, iso3, nm, max_pages=OCDS_MAX_PAGES).pull(TENDER_CPV, us_since, now_iso))
+                      for nm, base, iso3 in OCDS_PUBLISHERS]
+            with ThreadPoolExecutor(max_workers=10) as ex:
+                for tn, aw in ex.map(_safe, tasks):
+                    if tn:
+                        upsert_tenders(conn, tn)
+                    if aw:
+                        upsert_awards(conn, aw)
         # SELLERS = real exporters from approval registries (ADR-0006), NOT award winners. Pulled from
         # DG SANTE (keyless; animal-origin -> seafood + honey among our products). A won contract is a
         # PAST ORDER, so sellers must come from a different source or the two tabs are the same data.
