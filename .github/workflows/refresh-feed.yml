@@ -5,10 +5,13 @@ name: Refresh market feed
 # project `tradepulse-feed`, so this can never touch or break the heavy trade data (map + partner
 # tables) on `tradepulse-data`. The app reads feed files from FEED_BASE_URL (see web/app/lib/jsoncache.js).
 #
+# Split into two jobs so a failed deploy can be retried ("Re-run failed jobs") WITHOUT re-running the
+# ~50-min data pull — the deploy job just re-downloads the feed artifact the build job already produced.
+#
 # Refresh the map / partner tables (BACI) separately + rarely with: bash scripts/refresh-baci.sh
 #
 # Required GitHub secrets (Settings -> Secrets and variables -> Actions):
-#   CLOUDFLARE_API_TOKEN    a token with "Cloudflare Pages: Edit" permission
+#   CLOUDFLARE_API_TOKEN    a token with "Account -> Cloudflare Pages -> Edit" permission
 #   CLOUDFLARE_ACCOUNT_ID   your Cloudflare account id
 # Optional (richer feed; without them those sources just skip):
 #   KCS_SERVICE_KEY   USDA_API_KEY   API_DATA_GOV_KEY
@@ -23,19 +26,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  refresh:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"      # ETL is pure standard library — no pip install needed
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
 
       - name: Regenerate market feed (procurement + regulatory + price — no flows, no BACI)
         working-directory: etl
@@ -54,8 +53,27 @@ jobs:
           cp web/public/data/cpv-match.json _feed/ 2>/dev/null || true
           n=$(ls _feed | wc -l)
           echo "feed files generated: $n"
-          # Abort BEFORE deploying if the run produced suspiciously little — never publish a broken set.
-          test "$n" -gt 100
+          test "$n" -gt 100        # abort BEFORE publishing if the run produced suspiciously little
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: feed
+          path: _feed
+          retention-days: 2
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: feed
+          path: _feed
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - name: Deploy feed to Cloudflare Pages (tradepulse-feed)
         env:
