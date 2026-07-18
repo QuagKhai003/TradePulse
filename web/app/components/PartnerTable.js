@@ -12,7 +12,8 @@ export default function PartnerTable({ partners, lang, t, col, vnCode = 704 }) {
     <table className="ptable">
       <thead>
         <tr><th>#</th><th>{col || t.partnerCountry}</th><th className="num">{t.value}</th>
-          <th className="num">{t.share}</th><th className="num">{t.yoy}</th></tr>
+          <th className="num">{t.share}</th>
+          <th className="num"><span className="th-lg">{t.yoy}</span><span className="th-sm">{t.yoyShort || "YoY"}</span></th></tr>
       </thead>
       <tbody>
         {partners.map((p, i) => {

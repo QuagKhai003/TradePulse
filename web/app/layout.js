@@ -26,6 +26,14 @@ export const metadata = {
   description: "Nhu cầu thế giới đang dịch chuyển ở đâu — cho nhà xuất khẩu Việt Nam.",
 };
 
+// Explicit mobile viewport: device-width so small phones (below the Samsung S23's 360px) lay out at
+// their real width instead of a scaled-down 980px canvas. No maximum-scale — pinch-zoom stays for a11y.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="vi" className={`${sans.variable} ${display.variable}`}>

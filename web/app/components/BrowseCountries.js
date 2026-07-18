@@ -33,7 +33,7 @@ export default function BrowseCountries({ countries, lang, hs, label }) {
           <path d="M3 12h18" />
           <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" />
         </svg>
-        {label}
+        <span className="browse-label">{label}</span>
       </button>
       {open && (
         <div className="browse-menu">

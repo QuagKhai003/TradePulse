@@ -25,13 +25,20 @@ export default function SortMenu({ value, onChange, t }) {
   function toggle() {
     if (!open && btnRef.current) {
       const btn = btnRef.current.getBoundingClientRect();
-      const panelEl = btnRef.current.closest(".glasscol") || btnRef.current.closest(".panel-col");
-      const panel = panelEl ? panelEl.getBoundingClientRect() : btn;
-      // sit the menu just LEFT of the panel (in the gap next to it), not layered over the feed
-      const right = Math.round(window.innerWidth - panel.left + 10);
       const width = 236;
-      const clamped = Math.min(right, window.innerWidth - width - 8); // keep on-screen
-      setPos({ top: Math.round(btn.top), right: Math.max(8, clamped) });
+      if (window.innerWidth <= 640) {
+        // phones: the panel is full-width, so there's no gap beside it — open the menu directly BELOW
+        // the button, right-aligned to it (clamped on-screen), instead of layered over the list.
+        const right = Math.min(window.innerWidth - width - 8, Math.round(window.innerWidth - btn.right));
+        setPos({ top: Math.round(btn.bottom + 6), right: Math.max(8, right) });
+      } else {
+        const panelEl = btnRef.current.closest(".glasscol") || btnRef.current.closest(".panel-col");
+        const panel = panelEl ? panelEl.getBoundingClientRect() : btn;
+        // sit the menu just LEFT of the panel (in the gap next to it), not layered over the feed
+        const right = Math.round(window.innerWidth - panel.left + 10);
+        const clamped = Math.min(right, window.innerWidth - width - 8); // keep on-screen
+        setPos({ top: Math.round(btn.top), right: Math.max(8, clamped) });
+      }
     }
     setOpen((o) => !o);
   }
